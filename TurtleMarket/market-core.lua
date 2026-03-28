@@ -14,6 +14,17 @@ if not TM._libsLoaded then
     end
 end
 
+-- 隐藏 TurtleMarket 频道：在聊天事件层面拦截（顶层执行，参考 TurtleHCFilter 模式）
+local TM_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
+ChatFrame_OnEvent = function(event)
+    if (event == 'CHAT_MSG_CHANNEL' or event == 'CHAT_MSG_CHANNEL_NOTICE') then
+        if arg9 and string.find(arg9, 'TurtleMarket') then
+            return false
+        end
+    end
+    TM_orig_ChatFrame_OnEvent(event)
+end
+
 -- Turtle WoW 服务器名列表（用于检测）
 local TURTLE_REALMS = {
     ['Turtle WoW'] = true,
