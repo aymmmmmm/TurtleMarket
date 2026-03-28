@@ -175,6 +175,7 @@ initFrame:SetScript('OnEvent', function()
     TM_Data.myListings = TM_Data.myListings or {}
     TM_Data.myWants = TM_Data.myWants or {}
     TM_Data.history = TM_Data.history or {}
+    TM_Data.syncMeta = TM_Data.syncMeta or {}
     TM_Data.config = TM_Data.config or {}
     -- 配置默认值补全（不覆盖已有值）
     if TM_Data.config.enabled == nil then TM_Data.config.enabled = true end

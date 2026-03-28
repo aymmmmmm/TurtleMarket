@@ -122,7 +122,7 @@ Turtle WoW 硬核模式 P2P 去中心化交易公告板插件。
 TurtleMarket/
 ├── TurtleMarket.toc       插件清单 (Interface 11200)
 ├── libs.lua               基础库（定时器、钩子、UI组件、工具函数）  540行
-├── market-core.lua        核心控制器（初始化、频道、事件、工具）    617行
+├── market-core.lua        核心控制器（初始化、频道、事件、工具）    629行
 ├── market-protocol.lua    协议层（编解码、分片、节流）              361行
 ├── market-storage.lua     数据层（CRUD、清理、搜索、信誉）          561行
 ├── market-sync.lua        同步层（心跳、Gossip同步）                220行
@@ -135,7 +135,7 @@ TurtleMarket/
 └── DEVLOG.md              开发交接文档
 ```
 
-总计约 4,662 行 Lua 代码。
+总计约 4,674 行 Lua 代码。
 
 ## 安装
 
