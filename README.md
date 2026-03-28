@@ -139,7 +139,9 @@ TurtleMarket/
 
 ## 安装
 
-将 `TurtleMarket` 文件夹放入 `Interface/AddOns/` 目录，重启游戏。
+1. 下载 ZIP 并解压
+2. 将解压出的文件夹重命名为 `TurtleMarket`（GitHub 下载默认名为 `TurtleMarket-main`，必须去掉 `-main` 后缀，否则游戏无法识别插件）
+3. 将 `TurtleMarket` 文件夹放入 `Interface/AddOns/` 目录，重启游戏
 
 ## 要求
 
