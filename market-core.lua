@@ -254,7 +254,7 @@ initFrame:SetScript('OnEvent', function()
 
     --- 查找 TurtleMarket 频道 ID
     function TM:FindChannel()
-        for i = 1, 10 do
+        for i = 1, 20 do
             local id, name = GetChannelName(i)
             if name and string.find(name, self.CHANNEL_NAME) then
                 self.channelId = id
@@ -283,8 +283,18 @@ initFrame:SetScript('OnEvent', function()
             elseif retries < maxRetries then
                 TM.timers.delay(2 * retries, TryFind)
             else
-                TM.isReady = true
-                DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[TurtleMarket] 频道加入失败，UI 已就绪。|r')
+                -- 频道仍未找到，再尝试加入一次并延长重试
+                JoinChannelByName(TM.CHANNEL_NAME, '', 1)
+                TM.timers.delay(5, function()
+                    TM:FindChannel()
+                    if TM.channelId then
+                        TM.isReady = true
+                        TM:OnChannelReady()
+                    else
+                        TM.isReady = true
+                        DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[TurtleMarket] 频道加入失败，部分功能可能不可用。|r')
+                    end
+                end)
             end
         end
         TM.timers.delay(2, TryFind)

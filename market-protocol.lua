@@ -125,7 +125,10 @@ TM.modules['protocol'] = function()
         if not self.channelId then
             self:FindChannel()
         end
-        if not self.channelId then return end
+        if not self.channelId then
+            DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[TurtleMarket] 频道未连接，消息发送失败。尝试 /reload 重新加入频道。|r')
+            return
+        end
         message = SanitizeMessage(message)
         SendChatMessage(message, 'CHANNEL', nil, self.channelId)
     end
