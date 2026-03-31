@@ -274,23 +274,27 @@ TM.modules['browse'] = function()
 
     local hdrName = TM.ui.Font(headerRow, 10, '物品名称', {0.6, 0.6, 0.6}, 'LEFT')
     hdrName:SetPoint('LEFT', headerRow, 'LEFT', 36, 0)
-    hdrName:SetWidth(220)
+    hdrName:SetWidth(170)
 
     local hdrCount = TM.ui.Font(headerRow, 10, '数量', {0.6, 0.6, 0.6})
-    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 260, 0)
-    hdrCount:SetWidth(40)
+    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 210, 0)
+    hdrCount:SetWidth(35)
 
     local hdrPrice = TM.ui.Font(headerRow, 10, '价格', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 305, 0)
-    hdrPrice:SetWidth(120)
+    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 248, 0)
+    hdrPrice:SetWidth(100)
 
     local hdrSeller = TM.ui.Font(headerRow, 10, '卖家', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 430, 0)
-    hdrSeller:SetWidth(150)
+    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 352, 0)
+    hdrSeller:SetWidth(110)
 
     local hdrStatus = TM.ui.Font(headerRow, 10, '状态', {0.6, 0.6, 0.6})
-    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 585, 0)
-    hdrStatus:SetWidth(80)
+    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 466, 0)
+    hdrStatus:SetWidth(50)
+
+    local hdrNote = TM.ui.Font(headerRow, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrNote:SetPoint('LEFT', headerRow, 'LEFT', 520, 0)
+    hdrNote:SetWidth(164)
 
     -- ============================================================
     -- 商品列表区域（带图标）
@@ -338,45 +342,54 @@ TM.modules['browse'] = function()
 
         -- 物品名称
         local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
+        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
         nameText:SetPoint('LEFT', row, 'LEFT', 36, 0)
-        nameText:SetWidth(220)
+        nameText:SetWidth(170)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 1, 1)
         row.nameText = nameText
 
         -- 数量
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 260, 0)
-        countText:SetWidth(40)
+        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 210, 0)
+        countText:SetWidth(35)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         -- 价格
         local priceText = row:CreateFontString(nil, 'OVERLAY')
-        priceText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        priceText:SetPoint('LEFT', row, 'LEFT', 305, 0)
-        priceText:SetWidth(120)
+        priceText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        priceText:SetPoint('LEFT', row, 'LEFT', 248, 0)
+        priceText:SetWidth(100)
         priceText:SetJustifyH('LEFT')
         row.priceText = priceText
 
         -- 卖家（含信誉）
         local sellerText = row:CreateFontString(nil, 'OVERLAY')
-        sellerText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        sellerText:SetPoint('LEFT', row, 'LEFT', 430, 0)
-        sellerText:SetWidth(150)
+        sellerText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        sellerText:SetPoint('LEFT', row, 'LEFT', 352, 0)
+        sellerText:SetWidth(110)
         sellerText:SetJustifyH('LEFT')
         row.sellerText = sellerText
 
         -- 状态（在线/离线）
         local statusText = row:CreateFontString(nil, 'OVERLAY')
         statusText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        statusText:SetPoint('LEFT', row, 'LEFT', 585, 0)
-        statusText:SetWidth(80)
+        statusText:SetPoint('LEFT', row, 'LEFT', 466, 0)
+        statusText:SetWidth(50)
         statusText:SetJustifyH('CENTER')
         row.statusText = statusText
+
+        -- 备注
+        local noteText = row:CreateFontString(nil, 'OVERLAY')
+        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 520, 0)
+        noteText:SetWidth(164)
+        noteText:SetJustifyH('LEFT')
+        noteText:SetTextColor(0.9, 0.9, 0.7)
+        row.noteText = noteText
 
         row.listing = nil
         row:Hide()
@@ -412,6 +425,9 @@ TM.modules['browse'] = function()
             local repInfo = TM:GetReputationInfo(this.listing.seller or '')
             local repLabel, repColor = TM.GetReputationLevel(this.listing.seller or '')
             GameTooltip:AddLine('信誉: ' .. repLabel .. ' (' .. repInfo.trades .. '次交易)', repColor[1], repColor[2], repColor[3])
+            if this.listing.note and this.listing.note ~= '' then
+                GameTooltip:AddLine('备注: ' .. this.listing.note, 0.9, 0.9, 0.7)
+            end
             GameTooltip:AddLine('发布于: ' .. TM:FormatTimeAgo(this.listing.postedAt or 0), 0.6, 0.6, 0.6)
             if this.listing.source == 'sync' then
                 GameTooltip:AddLine('(通过网络同步)', 0.5, 0.5, 0.5)
@@ -517,7 +533,7 @@ TM.modules['browse'] = function()
     -- 折叠区域
     local wantForm = CreateFrame('Frame', nil, wantContent)
     wantForm:SetWidth(696)
-    wantForm:SetHeight(100)
+    wantForm:SetHeight(130)
     wantForm:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -30)
     wantForm:SetBackdrop({
         bgFile = 'Interface\\Buttons\\WHITE8X8',
@@ -602,8 +618,19 @@ TM.modules['browse'] = function()
     wfCopperBox:SetPoint('LEFT', wfCopperLabel, 'RIGHT', 2, 0)
     wfCopperBox:SetText('0')
 
+    -- 第三行：备注
+    local wfNoteLabel = TM.ui.Font(wantForm, 10, '备注:', {0.7, 0.7, 0.7})
+    wfNoteLabel:SetPoint('TOPLEFT', wantForm, 'TOPLEFT', 6, -68)
+
+    local wfNoteBox = TM.ui.Editbox(wantForm, 240, 20, TM.const.MAX_NOTE_LEN)
+    wfNoteBox:SetPoint('LEFT', wfNoteLabel, 'RIGHT', 4, 0)
+    wfNoteBox:SetText('')
+
+    local wfNoteHint = TM.ui.Font(wantForm, 9, '(可选) 在线时间、小号名等', {0.5, 0.5, 0.5}, 'LEFT')
+    wfNoteHint:SetPoint('LEFT', wfNoteBox, 'RIGHT', 6, 0)
+
     local wfSubmitBtn = TM.ui.Button(wantForm, '发布', 55, 20, false, {0, 1, 0})
-    wfSubmitBtn:SetPoint('LEFT', wfCopperBox, 'RIGHT', 8, 0)
+    wfSubmitBtn:SetPoint('LEFT', wfNoteBox, 'RIGHT', 140, 0)
     wfSubmitBtn:SetScript('OnClick', function()
         ParseWantInput()
         local itemName = wantNameBox:GetText() or ''
@@ -632,6 +659,7 @@ TM.modules['browse'] = function()
             buyer = TM.playerName,
             postedAt = time(),
             texture = wantItemTexture,
+            note = wfNoteBox:GetText() ~= '' and wfNoteBox:GetText() or nil,
         }
         TM:AddWant(want, 'direct')
         TM:AddMyWant(want)
@@ -650,6 +678,7 @@ TM.modules['browse'] = function()
         wantItemId = 0
         wantItemTexture = nil
         wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
+        wfNoteBox:SetText('')
 
         TM:RefreshUI('wants')
         TM:RefreshUI('mylistings')
@@ -663,7 +692,7 @@ TM.modules['browse'] = function()
         if wantFormVisible then
             wantForm:Show()
             wantFormToggle.text:SetText('收起')
-            wantListYOffset = -138
+            wantListYOffset = -168
         else
             wantForm:Hide()
             wantFormToggle.text:SetText('发布求购')
@@ -741,23 +770,27 @@ TM.modules['browse'] = function()
 
     local whdrName = TM.ui.Font(wantHeaderRow, 10, '求购物品', {0.6, 0.6, 0.6}, 'LEFT')
     whdrName:SetPoint('LEFT', wantHeaderRow, 'LEFT', 8, 0)
-    whdrName:SetWidth(245)
+    whdrName:SetWidth(170)
 
     local whdrCount = TM.ui.Font(wantHeaderRow, 10, '数量', {0.6, 0.6, 0.6})
-    whdrCount:SetPoint('LEFT', wantHeaderRow, 'LEFT', 260, 0)
-    whdrCount:SetWidth(40)
+    whdrCount:SetPoint('LEFT', wantHeaderRow, 'LEFT', 182, 0)
+    whdrCount:SetWidth(35)
 
     local whdrBudget = TM.ui.Font(wantHeaderRow, 10, '预算上限', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrBudget:SetPoint('LEFT', wantHeaderRow, 'LEFT', 305, 0)
-    whdrBudget:SetWidth(120)
+    whdrBudget:SetPoint('LEFT', wantHeaderRow, 'LEFT', 220, 0)
+    whdrBudget:SetWidth(100)
 
     local whdrBuyer = TM.ui.Font(wantHeaderRow, 10, '买家', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrBuyer:SetPoint('LEFT', wantHeaderRow, 'LEFT', 430, 0)
-    whdrBuyer:SetWidth(150)
+    whdrBuyer:SetPoint('LEFT', wantHeaderRow, 'LEFT', 324, 0)
+    whdrBuyer:SetWidth(110)
 
     local whdrWStatus = TM.ui.Font(wantHeaderRow, 10, '状态', {0.6, 0.6, 0.6})
-    whdrWStatus:SetPoint('LEFT', wantHeaderRow, 'LEFT', 585, 0)
-    whdrWStatus:SetWidth(80)
+    whdrWStatus:SetPoint('LEFT', wantHeaderRow, 'LEFT', 438, 0)
+    whdrWStatus:SetWidth(50)
+
+    local whdrNote = TM.ui.Font(wantHeaderRow, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    whdrNote:SetPoint('LEFT', wantHeaderRow, 'LEFT', 492, 0)
+    whdrNote:SetWidth(192)
 
     -- 求购列表滚动区域
     local wantScroll = TM.ui.Scrollframe(wantContent, 696, 380, 'TM_WantScroll')
@@ -787,45 +820,54 @@ TM.modules['browse'] = function()
 
         -- 物品名称
         local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
+        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
         nameText:SetPoint('LEFT', row, 'LEFT', 8, 0)
-        nameText:SetWidth(245)
+        nameText:SetWidth(170)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 0.82, 0)
         row.nameText = nameText
 
         -- 数量
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 260, 0)
-        countText:SetWidth(40)
+        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 182, 0)
+        countText:SetWidth(35)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         -- 预算
         local budgetText = row:CreateFontString(nil, 'OVERLAY')
-        budgetText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        budgetText:SetPoint('LEFT', row, 'LEFT', 305, 0)
-        budgetText:SetWidth(120)
+        budgetText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        budgetText:SetPoint('LEFT', row, 'LEFT', 220, 0)
+        budgetText:SetWidth(100)
         budgetText:SetJustifyH('LEFT')
         row.budgetText = budgetText
 
         -- 买家（含信誉）
         local buyerText = row:CreateFontString(nil, 'OVERLAY')
-        buyerText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        buyerText:SetPoint('LEFT', row, 'LEFT', 430, 0)
-        buyerText:SetWidth(150)
+        buyerText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        buyerText:SetPoint('LEFT', row, 'LEFT', 324, 0)
+        buyerText:SetWidth(110)
         buyerText:SetJustifyH('LEFT')
         row.buyerText = buyerText
 
         -- 状态
         local statusText = row:CreateFontString(nil, 'OVERLAY')
         statusText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        statusText:SetPoint('LEFT', row, 'LEFT', 585, 0)
-        statusText:SetWidth(80)
+        statusText:SetPoint('LEFT', row, 'LEFT', 438, 0)
+        statusText:SetWidth(50)
         statusText:SetJustifyH('CENTER')
         row.statusText = statusText
+
+        -- 备注
+        local noteText = row:CreateFontString(nil, 'OVERLAY')
+        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 492, 0)
+        noteText:SetWidth(192)
+        noteText:SetJustifyH('LEFT')
+        noteText:SetTextColor(0.9, 0.9, 0.7)
+        row.noteText = noteText
 
         row.want = nil
         row:Hide()
@@ -858,6 +900,9 @@ TM.modules['browse'] = function()
             GameTooltip:AddLine('买家: ' .. (this.want.buyer or ''), 0.5, 0.8, 1)
             local repLabel, repColor = TM.GetReputationLevel(this.want.buyer or '')
             GameTooltip:AddLine('信誉: ' .. repLabel, repColor[1], repColor[2], repColor[3])
+            if this.want.note and this.want.note ~= '' then
+                GameTooltip:AddLine('备注: ' .. this.want.note, 0.9, 0.9, 0.7)
+            end
             GameTooltip:AddLine('发布于: ' .. TM:FormatTimeAgo(this.want.postedAt or 0), 0.6, 0.6, 0.6)
             GameTooltip:Show()
         end)
@@ -1055,6 +1100,9 @@ TM.modules['browse'] = function()
                     row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(listing.lastSeen or listing.postedAt or 0) .. '|r')
                 end
 
+                -- 备注
+                row.noteText:SetText(listing.note or '')
+
                 row:Show()
             end
         end
@@ -1108,6 +1156,9 @@ TM.modules['browse'] = function()
                 else
                     row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(want.lastSeen or want.postedAt or 0) .. '|r')
                 end
+
+                -- 备注
+                row.noteText:SetText(want.note or '')
 
                 row:Show()
             end

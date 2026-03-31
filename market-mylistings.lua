@@ -31,8 +31,29 @@ TM.modules['mylistings'] = function()
     local sellTitle = TM.ui.Font(myContent, 12, '|cffffd700我的挂单|r', {1, 0.82, 0})
     sellTitle:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, 0)
 
+    -- 出售表头
+    local sellHeader = CreateFrame('Frame', nil, myContent)
+    sellHeader:SetWidth(696)
+    sellHeader:SetHeight(16)
+    sellHeader:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, -18)
+    local sellHdrBg = sellHeader:CreateTexture(nil, 'BACKGROUND')
+    sellHdrBg:SetTexture('Interface\\Buttons\\WHITE8X8')
+    sellHdrBg:SetAllPoints(sellHeader)
+    sellHdrBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
+
+    local shName = TM.ui.Font(sellHeader, 9, '物品', {0.6, 0.6, 0.6}, 'LEFT')
+    shName:SetPoint('LEFT', sellHeader, 'LEFT', 30, 0)
+    local shCount = TM.ui.Font(sellHeader, 9, '数量', {0.6, 0.6, 0.6})
+    shCount:SetPoint('LEFT', sellHeader, 'LEFT', 194, 0)
+    local shPrice = TM.ui.Font(sellHeader, 9, '价格', {0.6, 0.6, 0.6}, 'LEFT')
+    shPrice:SetPoint('LEFT', sellHeader, 'LEFT', 232, 0)
+    local shTime = TM.ui.Font(sellHeader, 9, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
+    shTime:SetPoint('LEFT', sellHeader, 'LEFT', 346, 0)
+    local shNote = TM.ui.Font(sellHeader, 9, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    shNote:SetPoint('LEFT', sellHeader, 'LEFT', 470, 0)
+
     local sellScroll = TM.ui.Scrollframe(myContent, 696, 230, 'TM_MySellScroll')
-    sellScroll:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, -20)
+    sellScroll:SetPoint('TOPLEFT', sellHeader, 'BOTTOMLEFT', 0, -2)
 
     -- 出售空状态占位
     local sellEmptyText = TM.ui.Font(sellScroll.content, 11, '你还没有发布任何商品。前往「出售」标签页发布。', {0.5, 0.5, 0.5})
@@ -72,33 +93,41 @@ TM.modules['mylistings'] = function()
         local nameText = row:CreateFontString(nil, 'OVERLAY')
         nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
         nameText:SetPoint('LEFT', row, 'LEFT', 30, 0)
-        nameText:SetWidth(240)
+        nameText:SetWidth(160)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 1, 1)
         row.nameText = nameText
 
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 275, 0)
-        countText:SetWidth(40)
+        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 194, 0)
+        countText:SetWidth(35)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         local priceText = row:CreateFontString(nil, 'OVERLAY')
-        priceText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        priceText:SetPoint('LEFT', row, 'LEFT', 320, 0)
-        priceText:SetWidth(150)
+        priceText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        priceText:SetPoint('LEFT', row, 'LEFT', 232, 0)
+        priceText:SetWidth(110)
         priceText:SetJustifyH('LEFT')
         row.priceText = priceText
 
         local timeText = row:CreateFontString(nil, 'OVERLAY')
-        timeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        timeText:SetPoint('LEFT', row, 'LEFT', 480, 0)
-        timeText:SetWidth(180)
+        timeText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        timeText:SetPoint('LEFT', row, 'LEFT', 346, 0)
+        timeText:SetWidth(120)
         timeText:SetJustifyH('LEFT')
         timeText:SetTextColor(0.6, 0.6, 0.6)
         row.timeText = timeText
+
+        local noteText = row:CreateFontString(nil, 'OVERLAY')
+        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 470, 0)
+        noteText:SetWidth(214)
+        noteText:SetJustifyH('LEFT')
+        noteText:SetTextColor(0.9, 0.9, 0.7)
+        row.noteText = noteText
 
         row.listingId = nil
         row:Hide()
@@ -115,6 +144,20 @@ TM.modules['mylistings'] = function()
             end
             this.bg:SetVertexColor(0.15, 0.3, 0.6, 0.9)
         end)
+
+        row:SetScript('OnEnter', function()
+            if not this.listingId then return end
+            local listing = TM_Data.myListings[this.listingId]
+            if not listing then return end
+            GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
+            TM:ShowItemTooltip(listing.itemId, listing.itemName, {1, 1, 1})
+            if listing.note and listing.note ~= '' then
+                GameTooltip:AddLine(' ')
+                GameTooltip:AddLine('备注: ' .. listing.note, 0.9, 0.9, 0.7)
+            end
+            GameTooltip:Show()
+        end)
+        row:SetScript('OnLeave', function() GameTooltip:Hide() end)
 
         sellRows[i] = row
     end
@@ -224,6 +267,7 @@ TM.modules['mylistings'] = function()
             postedAt = time(),
             expireHours = TM_Data.config.defaultExpireHours or 48,
             texture = oldListing.texture,
+            note = oldListing.note,
         }
         -- 添加新 listing 并广播
         TM:AddListing(newListing, 'direct')
@@ -256,8 +300,29 @@ TM.modules['mylistings'] = function()
     local wantTitle = TM.ui.Font(myContent, 12, '|cffffff00我的求购|r', {1, 1, 0})
     wantTitle:SetPoint('TOPLEFT', divider, 'BOTTOMLEFT', 0, -10)
 
+    -- 求购表头
+    local wantHeader = CreateFrame('Frame', nil, myContent)
+    wantHeader:SetWidth(696)
+    wantHeader:SetHeight(16)
+    wantHeader:SetPoint('TOPLEFT', wantTitle, 'BOTTOMLEFT', 0, -2)
+    local wantHdrBg = wantHeader:CreateTexture(nil, 'BACKGROUND')
+    wantHdrBg:SetTexture('Interface\\Buttons\\WHITE8X8')
+    wantHdrBg:SetAllPoints(wantHeader)
+    wantHdrBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
+
+    local whName = TM.ui.Font(wantHeader, 9, '物品', {0.6, 0.6, 0.6}, 'LEFT')
+    whName:SetPoint('LEFT', wantHeader, 'LEFT', 8, 0)
+    local whCount = TM.ui.Font(wantHeader, 9, '数量', {0.6, 0.6, 0.6})
+    whCount:SetPoint('LEFT', wantHeader, 'LEFT', 182, 0)
+    local whBudget = TM.ui.Font(wantHeader, 9, '预算', {0.6, 0.6, 0.6}, 'LEFT')
+    whBudget:SetPoint('LEFT', wantHeader, 'LEFT', 220, 0)
+    local whTime = TM.ui.Font(wantHeader, 9, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
+    whTime:SetPoint('LEFT', wantHeader, 'LEFT', 334, 0)
+    local whNote = TM.ui.Font(wantHeader, 9, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    whNote:SetPoint('LEFT', wantHeader, 'LEFT', 458, 0)
+
     local wantScroll = TM.ui.Scrollframe(myContent, 696, 180, 'TM_MyWantScroll')
-    wantScroll:SetPoint('TOPLEFT', wantTitle, 'BOTTOMLEFT', 0, -4)
+    wantScroll:SetPoint('TOPLEFT', wantHeader, 'BOTTOMLEFT', 0, -2)
 
     -- 求购空状态占位
     local wantEmptyText = TM.ui.Font(wantScroll.content, 11, '你还没有发布任何求购。前往「求购」标签页发布。', {0.5, 0.5, 0.5})
@@ -288,33 +353,41 @@ TM.modules['mylistings'] = function()
         local nameText = row:CreateFontString(nil, 'OVERLAY')
         nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
         nameText:SetPoint('LEFT', row, 'LEFT', 8, 0)
-        nameText:SetWidth(250)
+        nameText:SetWidth(170)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 0.82, 0)
         row.nameText = nameText
 
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 265, 0)
-        countText:SetWidth(40)
+        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 182, 0)
+        countText:SetWidth(35)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         local budgetText = row:CreateFontString(nil, 'OVERLAY')
-        budgetText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        budgetText:SetPoint('LEFT', row, 'LEFT', 310, 0)
-        budgetText:SetWidth(150)
+        budgetText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        budgetText:SetPoint('LEFT', row, 'LEFT', 220, 0)
+        budgetText:SetWidth(110)
         budgetText:SetJustifyH('LEFT')
         row.budgetText = budgetText
 
         local timeText = row:CreateFontString(nil, 'OVERLAY')
-        timeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        timeText:SetPoint('LEFT', row, 'LEFT', 470, 0)
-        timeText:SetWidth(180)
+        timeText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        timeText:SetPoint('LEFT', row, 'LEFT', 334, 0)
+        timeText:SetWidth(120)
         timeText:SetJustifyH('LEFT')
         timeText:SetTextColor(0.6, 0.6, 0.6)
         row.timeText = timeText
+
+        local noteText = row:CreateFontString(nil, 'OVERLAY')
+        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 458, 0)
+        noteText:SetWidth(226)
+        noteText:SetJustifyH('LEFT')
+        noteText:SetTextColor(0.9, 0.9, 0.7)
+        row.noteText = noteText
 
         row.wantId = nil
         row:Hide()
@@ -331,6 +404,18 @@ TM.modules['mylistings'] = function()
             end
             this.bg:SetVertexColor(0.15, 0.3, 0.6, 0.9)
         end)
+
+        row:SetScript('OnEnter', function()
+            if not this.wantId then return end
+            local want = TM_Data.myWants[this.wantId]
+            if not want then return end
+            if want.note and want.note ~= '' then
+                GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
+                GameTooltip:AddLine('备注: ' .. want.note, 0.9, 0.9, 0.7)
+                GameTooltip:Show()
+            end
+        end)
+        row:SetScript('OnLeave', function() GameTooltip:Hide() end)
 
         wantRows[i] = row
     end
@@ -398,6 +483,9 @@ TM.modules['mylistings'] = function()
             row.timeText:SetText(timeStr)
             row.timeText:SetTextColor(timeColor[1], timeColor[2], timeColor[3])
 
+            -- 备注
+            row.noteText:SetText(listing.note or '')
+
             row:Show()
         end
 
@@ -438,6 +526,9 @@ TM.modules['mylistings'] = function()
             local wTimeStr, wTimeColor = TM:FormatTimeRemaining(want.expiresAt)
             row.timeText:SetText(wTimeStr)
             row.timeText:SetTextColor(wTimeColor[1], wTimeColor[2], wTimeColor[3])
+
+            -- 备注
+            row.noteText:SetText(want.note or '')
 
             row:Show()
         end

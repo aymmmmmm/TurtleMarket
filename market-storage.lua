@@ -54,6 +54,7 @@ TM.modules['storage'] = function()
             lastSeen = time(),
             source = source or 'direct',
             texture = texture,
+            note = data.note,
         }
 
         -- 检查新 listing 是否匹配我的求购，提醒用户
@@ -96,6 +97,7 @@ TM.modules['storage'] = function()
             postedAt = data.postedAt or time(),
             expiresAt = data.expiresAt or (time() + (TM_Data.config.defaultExpireHours or 48) * 3600),
             texture = data.texture,
+            note = data.note,
         }
     end
 
@@ -120,6 +122,7 @@ TM.modules['storage'] = function()
             expiresAt = (data.postedAt or time()) + expireSeconds,
             lastSeen = data.lastSeen or time(),
             source = source or 'direct',
+            note = data.note,
         }
         -- 缓存买家职业
         if data.buyer then
@@ -146,6 +149,7 @@ TM.modules['storage'] = function()
             maxCopper = data.maxCopper or 0,
             postedAt = data.postedAt or time(),
             expiresAt = data.expiresAt or (time() + (TM_Data.config.defaultExpireHours or 48) * 3600),
+            note = data.note,
         }
     end
 
@@ -412,8 +416,10 @@ TM.modules['storage'] = function()
     --- 搜索求购列表（返回过滤后的数组）
     function TM:SearchWants(query, sortBy)
         local results = {}
+        local seen = {}
         local queryLower = query and string.lower(query) or nil
 
+        -- 搜索网络求购
         for _, want in pairs(TM_Data.wants) do
             local match = true
             if queryLower and queryLower ~= '' then
@@ -424,6 +430,25 @@ TM.modules['storage'] = function()
             end
             if match then
                 table.insert(results, want)
+                if want.id then seen[want.id] = true end
+            end
+        end
+
+        -- 合并自己的求购（避免重复）
+        for id, want in pairs(TM_Data.myWants) do
+            if not seen[id] then
+                want.id = want.id or id
+                want.buyer = want.buyer or TM.playerName
+                local match = true
+                if queryLower and queryLower ~= '' then
+                    local nameLower = string.lower(want.itemName or '')
+                    if not string.find(nameLower, queryLower) then
+                        match = false
+                    end
+                end
+                if match and (not want.expiresAt or want.expiresAt > time()) then
+                    table.insert(results, want)
+                end
             end
         end
 

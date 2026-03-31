@@ -42,6 +42,7 @@ TM.modules['sync'] = function()
         local digest = self:ComputeDigest()
         local msg = '#S$' .. digest
         self:SendMessage(msg, TM.PRIORITY.SYNC)
+        TM_Data.syncMeta = TM_Data.syncMeta or {}
         TM_Data.syncMeta.lastFullSync = time()
     end
 
@@ -64,6 +65,7 @@ TM.modules['sync'] = function()
                     .. ':' .. (listing.postedAt or 0)
                     .. ':' .. (listing.expiresAt or 0)
                     .. ':' .. string.gsub(listing.texture or '', '\\', '/')
+                    .. ':' .. TM.EscapeName(listing.note or '')
                 table.insert(batch, entry)
                 count = count + 1
                 if count >= 10 then
@@ -110,6 +112,7 @@ TM.modules['sync'] = function()
                         maxGold = want.maxGold,
                         maxSilver = want.maxSilver,
                         maxCopper = want.maxCopper,
+                        note = want.note,
                     }
                     local msg = TM:EncodeWant(data)
                     TM:SendMessage(msg, TM.PRIORITY.SYNC)
@@ -147,7 +150,10 @@ TM.modules['sync'] = function()
                         data.expireHours = math.ceil((expiresAt - data.postedAt) / 3600)
                         -- 第 11 个字段为纹理路径（兼容旧版无此字段）
                         if parts[11] and parts[11] ~= '' then
-                            data.texture = parts[11]
+                            data.texture = string.gsub(parts[11], '/', '\\')
+                        end
+                        if parts[12] and parts[12] ~= '' then
+                            data.note = TM.UnescapeName(parts[12])
                         end
                         TM:AddListing(data, 'sync')
                     end
@@ -191,6 +197,8 @@ TM.modules['sync'] = function()
                         seller = TM.playerName,
                         postedAt = listing.postedAt,
                         expireHours = math.ceil((listing.expiresAt - listing.postedAt) / 3600),
+                        texture = listing.texture,
+                        note = listing.note,
                     }
                     local msg = TM:EncodePost(data)
                     TM:SendMessage(msg, TM.PRIORITY.POST)
@@ -210,6 +218,7 @@ TM.modules['sync'] = function()
                         maxGold = want.maxGold,
                         maxSilver = want.maxSilver,
                         maxCopper = want.maxCopper,
+                        note = want.note,
                     }
                     local msg = TM:EncodeWant(data)
                     TM:SendMessage(msg, TM.PRIORITY.POST)

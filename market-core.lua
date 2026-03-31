@@ -503,8 +503,11 @@ initFrame:SetScript('OnEvent', function()
     --- 获取物品图标纹理路径（通过 itemId 查询本地缓存）
     function TM:GetItemTexture(itemId)
         if not itemId or itemId == 0 then return nil end
-        local _, _, _, _, _, _, _, _, _, texture = GetItemInfo(itemId)
-        return texture
+        local _, _, _, _, _, _, _, _, texture = GetItemInfo(itemId)
+        if texture and type(texture) == 'string' and string.find(texture, '\\') then
+            return texture
+        end
+        return nil
     end
 
     -- 斜杠命令已在文件顶层注册

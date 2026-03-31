@@ -174,6 +174,19 @@ TM.modules['post'] = function()
     end)
 
     -- ============================================================
+    -- 备注输入区域
+    -- ============================================================
+    local noteLabel = TM.ui.Font(postContent, 11, '备注:', {0.7, 0.7, 0.7})
+    noteLabel:SetPoint('TOPLEFT', sellPriceLabel, 'TOPLEFT', 0, -36)
+
+    local noteBox = TM.ui.Editbox(postContent, 280, 26, TM.const.MAX_NOTE_LEN)
+    noteBox:SetPoint('LEFT', noteLabel, 'RIGHT', 6, 0)
+    noteBox:SetText('')
+
+    local noteHint = TM.ui.Font(postContent, 9, '(可选) 在线时间、小号名等', {0.5, 0.5, 0.5}, 'LEFT')
+    noteHint:SetPoint('LEFT', noteBox, 'RIGHT', 6, 0)
+
+    -- ============================================================
     -- 重置表单
     -- ============================================================
     local function ResetForm()
@@ -192,13 +205,14 @@ TM.modules['post'] = function()
         silverBox:SetText('0')
         copperBox:SetText('0')
         sellCountBox:SetText('1')
+        noteBox:SetText('')
     end
 
     -- ============================================================
     -- 发布按钮
     -- ============================================================
     local postSellBtn = TM.ui.Button(postContent, '发布商品', 140, 32, false, {0, 1, 0})
-    postSellBtn:SetPoint('TOPLEFT', sellPriceLabel, 'TOPLEFT', 0, -42)
+    postSellBtn:SetPoint('TOPLEFT', noteLabel, 'TOPLEFT', 0, -42)
     postSellBtn:SetScript('OnClick', function()
         if selectedItemName == '' or selectedItemName == nil then
             DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先从背包中点击选择一件物品。|r')
@@ -231,6 +245,7 @@ TM.modules['post'] = function()
             postedAt = time(),
             expireHours = TM_Data.config.defaultExpireHours or 48,
             texture = selectedTexture,
+            note = noteBox:GetText() ~= '' and noteBox:GetText() or nil,
         }
 
         TM:AddListing(listing, 'direct')

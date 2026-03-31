@@ -238,7 +238,7 @@ TM.modules['protocol'] = function()
 
     --- 编码发布消息（含纹理路径，物品名转义）
     function TM:EncodePost(listing)
-        return '#P$' .. TM.EscapeName(listing.id)
+        local msg = '#P$' .. TM.EscapeName(listing.id)
             .. ':' .. (listing.itemId or 0)
             .. ':' .. TM.EscapeName(listing.itemName or 'Unknown')
             .. ':' .. (listing.count or 1)
@@ -249,6 +249,10 @@ TM.modules['protocol'] = function()
             .. ':' .. TM.playerName
             .. ':' .. time()
             .. ':' .. string.gsub(listing.texture or '', '\\', '/')
+        if listing.note and listing.note ~= '' then
+            msg = msg .. ':' .. TM.EscapeName(listing.note)
+        end
+        return msg
     end
 
     --- 解码发布消息（兼容有无纹理字段，物品名反转义）
@@ -269,8 +273,10 @@ TM.modules['protocol'] = function()
             expireHours = tonumber(parts[8]) or 48,
             seller = parts[9],
             postedAt = tonumber(parts[10]) or time(),
-            -- 第 11 字段: 纹理路径（兼容旧版无此字段）
-            texture = parts[11] and parts[11] ~= '' and parts[11] or nil,
+            -- 第 11 字段: 纹理路径（兼容旧版无此字段，恢复反斜杠）
+            texture = parts[11] and parts[11] ~= '' and string.gsub(parts[11], '/', '\\') or nil,
+            -- 第 12 字段: 备注（兼容旧版无此字段）
+            note = parts[12] and parts[12] ~= '' and TM.UnescapeName(parts[12]) or nil,
         }
     end
 
@@ -302,7 +308,7 @@ TM.modules['protocol'] = function()
 
     --- 编码求购消息（携带 want ID，物品名转义）
     function TM:EncodeWant(want)
-        return '#W$' .. (want.id or '')
+        local msg = '#W$' .. (want.id or '')
             .. ':' .. (want.itemId or 0)
             .. ':' .. TM.EscapeName(want.itemName or 'Unknown')
             .. ':' .. (want.count or 1)
@@ -311,6 +317,10 @@ TM.modules['protocol'] = function()
             .. ':' .. (want.maxCopper or 0)
             .. ':' .. TM.playerName
             .. ':' .. time()
+        if want.note and want.note ~= '' then
+            msg = msg .. ':' .. TM.EscapeName(want.note)
+        end
+        return msg
     end
 
     --- 解码求购消息（9 字段：id + 原 8 字段，物品名反转义）
@@ -331,6 +341,8 @@ TM.modules['protocol'] = function()
                 maxCopper = tonumber(parts[7]) or 0,
                 buyer = parts[8],
                 postedAt = tonumber(parts[9]) or time(),
+                -- 第 10 字段: 备注（兼容旧版无此字段）
+                note = parts[10] and parts[10] ~= '' and TM.UnescapeName(parts[10]) or nil,
             }
         elseif table.getn(parts) >= 8 then
             -- 旧版兼容：无 id 字段

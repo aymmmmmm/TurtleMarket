@@ -13,11 +13,13 @@ Turtle WoW 硬核模式 P2P 去中心化交易公告板插件。
 - 物品图标真实显示（通过协议传输纹理路径，三级回退机制）
 - 鼠标悬停显示原生物品 Tooltip（装绑、属性、套装等完整信息），并附加卖家/信誉/价格
 - 点击「密语卖家」直接发送格式化的购买意向密语
+- 发布时可添加备注（在线时间、小号名等），浏览列表独立列显示
 
 ### 求购
 - 手动输入物品名或 Shift+点击物品链接发布求购（链接方式自动识别图标和 ID）
 - 卖家可在求购列表中找到买家需求，点击「密语买家」主动联系
 - 求购支持搜索、排序、分页
+- 求购同样支持备注功能，自己的求购也会显示在浏览页
 
 ### 信誉评分
 - 四级信誉：新手(灰) → 可靠(绿) → 信赖(蓝) → 元老(金)
@@ -25,9 +27,9 @@ Turtle WoW 硬核模式 P2P 去中心化交易公告板插件。
 - 信誉等级显示在浏览列表和求购列表的玩家名旁
 
 ### 我的商品
-- 查看自己发布的出售和求购列表
+- 查看自己发布的出售和求购列表，含备注列和表头
 - 取消出售 / 取消求购
-- 过期商品一键重新发布（复制原价格和数量，生成新有效期）
+- 过期商品一键重新发布（复制原价格、数量和备注，生成新有效期）
 
 ### 交易辅助
 - 交易窗口旁自动显示预期价格提示
@@ -86,9 +88,9 @@ Turtle WoW 硬核模式 P2P 去中心化交易公告板插件。
 
 | 消息 | 用途 | 格式 |
 |------|------|------|
-| `#P` | 发布商品 | `id:itemId:name:count:gold:silver:copper:hours:seller:time:texture` |
+| `#P` | 发布商品 | `id:itemId:name:count:gold:silver:copper:hours:seller:time:texture[:note]` |
 | `#C` | 取消商品 | `listingId:sellerName` |
-| `#W` | 发布求购 | `itemId:name:count:maxGold:maxSilver:maxCopper:buyer:time` |
+| `#W` | 发布求购 | `id:itemId:name:count:maxGold:maxSilver:maxCopper:buyer:time[:note]` |
 | `#X` | 取消求购 | `wantId:buyerName` |
 | `#H` | 心跳 | `playerName:listingCount:timestamp` |
 | `#S` | 同步请求 | `digest` |

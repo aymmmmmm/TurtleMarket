@@ -32,6 +32,7 @@ TM.const = {
     AUTO_RATE_COUNTDOWN = 10,
     MAX_REPUTATION = 500,
     MAX_PLAYER_CACHE = 1000,
+    MAX_NOTE_LEN = 100,
 }
 
 -- 字体路径（延迟检测，先设默认值）
@@ -428,11 +429,16 @@ end
 -- @param itemId number|nil 物品 ID
 -- @return string 纹理路径
 function TM.ResolveTexture(texture, itemId)
-    if texture then return texture end
+    -- Level 1: 存储值优先（来自 GetContainerItemInfo 或协议解码，通常有效）
+    if texture then
+        return string.gsub(texture, '/', '\\')
+    end
+    -- Level 2: 运行时查询（存储值缺失时通过 GetItemInfo 补救）
     if itemId and itemId > 0 and TM.GetItemTexture then
         local t = TM:GetItemTexture(itemId)
         if t then return t end
     end
+    -- Level 3: 问号图标
     return 'Interface\\Icons\\INV_Misc_QuestionMark'
 end
 
