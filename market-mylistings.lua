@@ -216,7 +216,7 @@ TM.modules['mylistings'] = function()
 
             DEFAULT_CHAT_FRAME:AddMessage('|cffffff00[龟市] 求购已取消。|r')
             TM:RefreshUI('mylistings')
-            TM:RefreshUI('wants')
+            TM:RefreshUI('browse')
         end,
         timeout = 0,
         whileDead = 1,

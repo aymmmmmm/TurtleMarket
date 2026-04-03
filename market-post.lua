@@ -39,14 +39,14 @@ TM.modules['post'] = function()
     -- ============================================================
     -- 物品选择提示
     -- ============================================================
-    local selectLabel = TM.ui.Font(postContent, 12, '点击背包中的物品以选择出售:', {0.8, 0.8, 0.8})
+    local selectLabel = TM.ui.Font(postContent, 13, '点击背包中的物品以选择出售:', {0.8, 0.8, 0.8})
     selectLabel:SetPoint('TOPLEFT', postContent, 'TOPLEFT', 0, 0)
 
     -- 物品预览框
     local itemFrame = CreateFrame('Button', 'TM_ItemPreview', postContent)
-    itemFrame:SetWidth(280)
-    itemFrame:SetHeight(42)
-    itemFrame:SetPoint('TOPLEFT', postContent, 'TOPLEFT', 0, -28)
+    itemFrame:SetWidth(400)
+    itemFrame:SetHeight(52)
+    itemFrame:SetPoint('TOPLEFT', postContent, 'TOPLEFT', 0, -30)
     itemFrame:SetBackdrop({
         bgFile = 'Interface\\Buttons\\WHITE8X8',
         edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
@@ -57,18 +57,18 @@ TM.modules['post'] = function()
     itemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
 
     local itemIcon = itemFrame:CreateTexture(nil, 'ARTWORK')
-    itemIcon:SetWidth(32)
-    itemIcon:SetHeight(32)
-    itemIcon:SetPoint('LEFT', itemFrame, 'LEFT', 5, 0)
+    itemIcon:SetWidth(40)
+    itemIcon:SetHeight(40)
+    itemIcon:SetPoint('LEFT', itemFrame, 'LEFT', 6, 0)
     itemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
 
-    local itemNameText = TM.ui.Font(itemFrame, 12, '尚未选择物品', {0.6, 0.6, 0.6}, 'LEFT')
-    itemNameText:SetPoint('LEFT', itemIcon, 'RIGHT', 8, 0)
-    itemNameText:SetWidth(220)
+    local itemNameText = TM.ui.Font(itemFrame, 13, '尚未选择物品', {0.6, 0.6, 0.6}, 'LEFT')
+    itemNameText:SetPoint('LEFT', itemIcon, 'RIGHT', 10, 0)
+    itemNameText:SetWidth(330)
 
     -- 可用数量
-    local countLabel = TM.ui.Font(postContent, 10, '', {0.6, 0.8, 0.6})
-    countLabel:SetPoint('TOPLEFT', itemFrame, 'BOTTOMLEFT', 0, -8)
+    local countLabel = TM.ui.Font(postContent, 11, '', {0.6, 0.8, 0.6})
+    countLabel:SetPoint('TOPLEFT', itemFrame, 'BOTTOMLEFT', 0, -12)
 
     -- Tooltip：鼠标悬停预览框显示物品信息
     itemFrame:SetScript('OnEnter', function()
@@ -131,29 +131,29 @@ TM.modules['post'] = function()
     -- ============================================================
     -- 价格输入区域
     -- ============================================================
-    local sellQtyLabel = TM.ui.Font(postContent, 11, '数量:', {0.7, 0.7, 0.7})
-    sellQtyLabel:SetPoint('TOPLEFT', itemFrame, 'BOTTOMLEFT', 0, -30)
+    local sellQtyLabel = TM.ui.Font(postContent, 12, '数量:', {0.7, 0.7, 0.7})
+    sellQtyLabel:SetPoint('TOPLEFT', itemFrame, 'BOTTOMLEFT', 0, -48)
 
-    sellCountBox = TM.ui.Editbox(postContent, 50, 26, 5)
-    sellCountBox:SetPoint('LEFT', sellQtyLabel, 'RIGHT', 6, 0)
+    sellCountBox = TM.ui.Editbox(postContent, 60, 30, 5)
+    sellCountBox:SetPoint('LEFT', sellQtyLabel, 'RIGHT', 8, 0)
     sellCountBox:SetText('1')
 
-    local sellPriceLabel = TM.ui.Font(postContent, 11, '价格:', {0.7, 0.7, 0.7})
-    sellPriceLabel:SetPoint('TOPLEFT', sellQtyLabel, 'TOPLEFT', 0, -36)
+    local sellPriceLabel = TM.ui.Font(postContent, 12, '价格:', {0.7, 0.7, 0.7})
+    sellPriceLabel:SetPoint('TOPLEFT', sellQtyLabel, 'TOPLEFT', 0, -50)
 
     -- 金
-    local goldLabel = TM.ui.Font(postContent, 11, '金:', {1, 0.84, 0})
-    goldLabel:SetPoint('LEFT', sellPriceLabel, 'RIGHT', 6, 0)
+    local goldLabel = TM.ui.Font(postContent, 12, '金:', {1, 0.84, 0})
+    goldLabel:SetPoint('LEFT', sellPriceLabel, 'RIGHT', 8, 0)
 
-    local goldBox = TM.ui.Editbox(postContent, 50, 26, 5)
+    local goldBox = TM.ui.Editbox(postContent, 60, 30, 5)
     goldBox:SetPoint('LEFT', goldLabel, 'RIGHT', 4, 0)
     goldBox:SetText('0')
 
     -- 银
-    local silverLabel = TM.ui.Font(postContent, 11, '银:', {0.78, 0.78, 0.78})
-    silverLabel:SetPoint('LEFT', goldBox, 'RIGHT', 8, 0)
+    local silverLabel = TM.ui.Font(postContent, 12, '银:', {0.78, 0.78, 0.78})
+    silverLabel:SetPoint('LEFT', goldBox, 'RIGHT', 10, 0)
 
-    local silverBox = TM.ui.Editbox(postContent, 40, 26, 2)
+    local silverBox = TM.ui.Editbox(postContent, 50, 30, 2)
     silverBox:SetPoint('LEFT', silverLabel, 'RIGHT', 4, 0)
     silverBox:SetText('0')
     silverBox:SetScript('OnTextChanged', function()
@@ -162,10 +162,10 @@ TM.modules['post'] = function()
     end)
 
     -- 铜
-    local copperLabel = TM.ui.Font(postContent, 11, '铜:', {0.93, 0.65, 0.37})
-    copperLabel:SetPoint('LEFT', silverBox, 'RIGHT', 8, 0)
+    local copperLabel = TM.ui.Font(postContent, 12, '铜:', {0.93, 0.65, 0.37})
+    copperLabel:SetPoint('LEFT', silverBox, 'RIGHT', 10, 0)
 
-    local copperBox = TM.ui.Editbox(postContent, 40, 26, 2)
+    local copperBox = TM.ui.Editbox(postContent, 50, 30, 2)
     copperBox:SetPoint('LEFT', copperLabel, 'RIGHT', 4, 0)
     copperBox:SetText('0')
     copperBox:SetScript('OnTextChanged', function()
@@ -176,15 +176,15 @@ TM.modules['post'] = function()
     -- ============================================================
     -- 备注输入区域
     -- ============================================================
-    local noteLabel = TM.ui.Font(postContent, 11, '备注:', {0.7, 0.7, 0.7})
-    noteLabel:SetPoint('TOPLEFT', sellPriceLabel, 'TOPLEFT', 0, -36)
+    local noteLabel = TM.ui.Font(postContent, 12, '备注:', {0.7, 0.7, 0.7})
+    noteLabel:SetPoint('TOPLEFT', sellPriceLabel, 'TOPLEFT', 0, -50)
 
-    local noteBox = TM.ui.Editbox(postContent, 280, 26, TM.const.MAX_NOTE_LEN)
-    noteBox:SetPoint('LEFT', noteLabel, 'RIGHT', 6, 0)
+    local noteBox = TM.ui.Editbox(postContent, 360, 30, TM.const.MAX_NOTE_LEN)
+    noteBox:SetPoint('LEFT', noteLabel, 'RIGHT', 8, 0)
     noteBox:SetText('')
 
     local noteHint = TM.ui.Font(postContent, 9, '(可选) 在线时间、小号名等', {0.5, 0.5, 0.5}, 'LEFT')
-    noteHint:SetPoint('LEFT', noteBox, 'RIGHT', 6, 0)
+    noteHint:SetPoint('LEFT', noteBox, 'RIGHT', 8, 0)
 
     -- ============================================================
     -- 重置表单
@@ -211,8 +211,8 @@ TM.modules['post'] = function()
     -- ============================================================
     -- 发布按钮
     -- ============================================================
-    local postSellBtn = TM.ui.Button(postContent, '发布商品', 140, 32, false, {0, 1, 0})
-    postSellBtn:SetPoint('TOPLEFT', noteLabel, 'TOPLEFT', 0, -42)
+    local postSellBtn = TM.ui.Button(postContent, '发布商品', 160, 38, false, {0, 1, 0})
+    postSellBtn:SetPoint('TOPLEFT', noteLabel, 'TOPLEFT', 0, -56)
     postSellBtn:SetScript('OnClick', function()
         if selectedItemName == '' or selectedItemName == nil then
             DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先从背包中点击选择一件物品。|r')

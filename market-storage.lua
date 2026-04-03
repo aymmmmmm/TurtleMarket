@@ -471,6 +471,147 @@ TM.modules['storage'] = function()
         return results
     end
 
+    --- 统一搜索（合并出售 + 求购，返回带 _type 标记的混合数组）
+    -- @param query string 搜索关键词
+    -- @param sortBy string 排序方式
+    -- @param filters table {minPrice, maxPrice, seller, onlineOnly, listingType}
+    function TM:SearchAll(query, sortBy, filters)
+        local results = {}
+        local queryLower = query and string.lower(query) or nil
+        filters = filters or {}
+        local listingType = filters.listingType or 'all'
+
+        -- 浅拷贝 + 附加字段（避免污染原始数据）
+        local function wrap(src, extra)
+            local t = {}
+            for k, v in pairs(src) do t[k] = v end
+            for k, v in pairs(extra) do t[k] = v end
+            return t
+        end
+
+        -- 出售商品
+        if listingType == 'all' or listingType == 'sell' then
+            for _, listing in pairs(TM_Data.listings) do
+                local match = true
+                if queryLower and queryLower ~= '' then
+                    local nameLower = string.lower(listing.itemName or '')
+                    if not string.find(nameLower, queryLower) then match = false end
+                end
+                local price = TM:PriceToCopper(listing.priceGold, listing.priceSilver, listing.priceCopper)
+                if match and filters.minPrice and filters.minPrice > 0 then
+                    if price < filters.minPrice then match = false end
+                end
+                if match and filters.maxPrice and filters.maxPrice > 0 then
+                    if price > filters.maxPrice then match = false end
+                end
+                if match and filters.seller and filters.seller ~= '' then
+                    local sellerLower = string.lower(listing.seller or '')
+                    if not string.find(sellerLower, string.lower(filters.seller)) then match = false end
+                end
+                if match and filters.onlineOnly then
+                    if not TM:IsSellerOnline(listing) then match = false end
+                end
+                if match then
+                    table.insert(results, wrap(listing, {
+                        _type = 'sell',
+                        _priceCopper = price,
+                        _player = listing.seller,
+                    }))
+                end
+            end
+        end
+
+        -- 求购信息
+        if listingType == 'all' or listingType == 'buy' then
+            local seen = {}
+            for _, want in pairs(TM_Data.wants) do
+                local match = true
+                if queryLower and queryLower ~= '' then
+                    local nameLower = string.lower(want.itemName or '')
+                    if not string.find(nameLower, queryLower) then match = false end
+                end
+                local price = TM:PriceToCopper(want.maxGold, want.maxSilver, want.maxCopper)
+                if match and filters.minPrice and filters.minPrice > 0 then
+                    if price < filters.minPrice then match = false end
+                end
+                if match and filters.maxPrice and filters.maxPrice > 0 then
+                    if price > filters.maxPrice then match = false end
+                end
+                if match and filters.seller and filters.seller ~= '' then
+                    local buyerLower = string.lower(want.buyer or '')
+                    if not string.find(buyerLower, string.lower(filters.seller)) then match = false end
+                end
+                if match and filters.onlineOnly then
+                    if not TM:IsPlayerOnline(want.lastSeen) then match = false end
+                end
+                if match then
+                    table.insert(results, wrap(want, {
+                        _type = 'buy',
+                        _priceCopper = price,
+                        _player = want.buyer,
+                    }))
+                    if want.id then seen[want.id] = true end
+                end
+            end
+            -- 合并自己的求购（避免重复）
+            for id, want in pairs(TM_Data.myWants) do
+                if not seen[id] then
+                    local match = true
+                    if queryLower and queryLower ~= '' then
+                        local nameLower = string.lower(want.itemName or '')
+                        if not string.find(nameLower, queryLower) then match = false end
+                    end
+                    if match and (not want.expiresAt or want.expiresAt > time()) then
+                        local price = TM:PriceToCopper(want.maxGold, want.maxSilver, want.maxCopper)
+                        if filters.minPrice and filters.minPrice > 0 then
+                            if price < filters.minPrice then match = false end
+                        end
+                        if match and filters.maxPrice and filters.maxPrice > 0 then
+                            if price > filters.maxPrice then match = false end
+                        end
+                        if match and filters.seller and filters.seller ~= '' then
+                            local buyerLower = string.lower((want.buyer or TM.playerName) or '')
+                            if not string.find(buyerLower, string.lower(filters.seller)) then match = false end
+                        end
+                        if match and filters.onlineOnly then
+                            if not TM:IsPlayerOnline(want.lastSeen) then match = false end
+                        end
+                        if match then
+                            table.insert(results, wrap(want, {
+                                id = want.id or id,
+                                buyer = want.buyer or TM.playerName,
+                                _type = 'buy',
+                                _priceCopper = price,
+                                _player = want.buyer or TM.playerName,
+                            }))
+                        end
+                    end
+                end
+            end
+        end
+
+        -- 排序
+        if sortBy == 'price_asc' then
+            table.sort(results, function(a, b)
+                return (a._priceCopper or 0) < (b._priceCopper or 0)
+            end)
+        elseif sortBy == 'price_desc' then
+            table.sort(results, function(a, b)
+                return (a._priceCopper or 0) > (b._priceCopper or 0)
+            end)
+        elseif sortBy == 'count' then
+            table.sort(results, function(a, b)
+                return (a.count or 0) > (b.count or 0)
+            end)
+        else
+            table.sort(results, function(a, b)
+                return (a.postedAt or 0) > (b.postedAt or 0)
+            end)
+        end
+
+        return results
+    end
+
     --- 获取在线节点数量
     function TM:GetOnlineNodeCount()
         local seen = {}
@@ -559,7 +700,7 @@ TM.modules['storage'] = function()
             data.id = (data.buyer or sender) .. ':' .. (data.itemId or 0) .. ':' .. data.postedAt
         end
         TM:AddWant(data, 'direct')
-        TM:RefreshUI('wants')
+        TM:RefreshUI('browse')
     end)
 
     -- 处理求购取消消息 #X
@@ -569,7 +710,7 @@ TM.modules['storage'] = function()
         local want = TM_Data.wants[wantId]
         if want and want.buyer == buyer then
             TM:RemoveWant(wantId)
-            TM:RefreshUI('wants')
+            TM:RefreshUI('browse')
             TM:RefreshUI('mylistings')
         end
     end)

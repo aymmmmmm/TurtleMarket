@@ -1,6 +1,6 @@
 -- ============================================================
 -- TurtleMarket 浏览界面（独立版）
--- 主界面：搜索、分页浏览、排序、密语卖家、求购浏览
+-- 主界面：统一市场大厅（出售+求购）、搜索、筛选、排序、密语、求购发布
 -- ============================================================
 
 TM.modules['browse'] = function()
@@ -18,13 +18,8 @@ TM.modules['browse'] = function()
     local currentResults = {}
     local currentTab = 'browse'
 
-    -- 求购浏览状态
-    local wantQuery = ''
-    local wantSort = 'time'
-    local wantPage = 1
-    local wantResults = {}
-
     -- 搜索筛选器
+    local filterListingType = 'all'  -- 'all' / 'sell' / 'buy'
     local filterMinPrice = 0
     local filterMaxPrice = 0
     local filterSeller = ''
@@ -32,6 +27,8 @@ TM.modules['browse'] = function()
 
     -- 前向声明（在 clearBtn OnClick 闭包之前声明，避免全局泄漏）
     local filterMinPriceBox, filterMaxPriceBox, filterSellerBox, onlineOnlyBtn
+    local UpdateTypeButtons
+    local whisperBtn
 
     -- ============================================================
     -- 主窗口
@@ -107,8 +104,6 @@ TM.modules['browse'] = function()
                 TM:RefreshUI('browse')
             elseif currentTab == 'post' then
                 if TM.frames.postContent then TM.frames.postContent:Show() end
-            elseif currentTab == 'wants' then
-                TM:RefreshUI('wants')
             elseif currentTab == 'mylistings' then
                 TM:RefreshUI('mylistings')
             elseif currentTab == 'history' then
@@ -160,7 +155,9 @@ TM.modules['browse'] = function()
         filterMaxPrice = 0
         filterSeller = ''
         filterOnlineOnly = false
+        filterListingType = 'all'
         onlineOnlyBtn.text:SetText('只看在线')
+        UpdateTypeButtons()
         TM:RefreshUI('browse')
     end)
 
@@ -196,7 +193,7 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    local sellerLabel = TM.ui.Font(filterRow, 10, '卖家:', {0.7, 0.7, 0.7})
+    local sellerLabel = TM.ui.Font(filterRow, 10, '玩家:', {0.7, 0.7, 0.7})
     sellerLabel:SetPoint('LEFT', filterMaxPriceBox, 'RIGHT', 6, 0)
 
     filterSellerBox = TM.ui.Editbox(filterRow, 80, 22, 20)
@@ -233,7 +230,7 @@ TM.modules['browse'] = function()
     end)
 
     -- ============================================================
-    -- 排序按钮
+    -- 排序按钮 + 类型筛选
     -- ============================================================
     local sortLabel = TM.ui.Font(browseContent, 10, '排序:', {0.7, 0.7, 0.7})
     sortLabel:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -58)
@@ -255,6 +252,38 @@ TM.modules['browse'] = function()
         sortButtons[i] = btn
     end
 
+    -- 类型筛选按钮组
+    local typeLabel = TM.ui.Font(browseContent, 10, '类型:', {0.7, 0.7, 0.7})
+    typeLabel:SetPoint('LEFT', sortButtons[4], 'RIGHT', 16, 0)
+
+    local typeFilterBtns = {}
+    local typeNames = {'全部', '出售', '求购'}
+    local typeKeys = {'all', 'sell', 'buy'}
+
+    UpdateTypeButtons = function()
+        for j = 1, 3 do
+            if typeKeys[j] == filterListingType then
+                typeFilterBtns[j].text:SetText('|cff00ff00' .. typeNames[j] .. '|r')
+            else
+                typeFilterBtns[j].text:SetText(typeNames[j])
+            end
+        end
+    end
+
+    for i = 1, 3 do
+        local btn = TM.ui.Button(browseContent, typeNames[i], 50, 22)
+        btn:SetPoint('LEFT', typeLabel, 'RIGHT', 4 + (i - 1) * 54, 0)
+        btn.typeKey = typeKeys[i]
+        btn:SetScript('OnClick', function()
+            filterListingType = this.typeKey
+            currentPage = 1
+            UpdateTypeButtons()
+            TM:RefreshUI('browse')
+        end)
+        typeFilterBtns[i] = btn
+    end
+    UpdateTypeButtons()
+
     -- ============================================================
     -- 商品列表表头
     -- ============================================================
@@ -270,31 +299,35 @@ TM.modules['browse'] = function()
 
     local hdrIcon = TM.ui.Font(headerRow, 10, '', {0.6, 0.6, 0.6})
     hdrIcon:SetPoint('LEFT', headerRow, 'LEFT', 2, 0)
-    hdrIcon:SetWidth(32)
+    hdrIcon:SetWidth(28)
+
+    local hdrType = TM.ui.Font(headerRow, 10, '类型', {0.6, 0.6, 0.6})
+    hdrType:SetPoint('LEFT', headerRow, 'LEFT', 32, 0)
+    hdrType:SetWidth(45)
 
     local hdrName = TM.ui.Font(headerRow, 10, '物品名称', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrName:SetPoint('LEFT', headerRow, 'LEFT', 36, 0)
-    hdrName:SetWidth(170)
+    hdrName:SetPoint('LEFT', headerRow, 'LEFT', 80, 0)
+    hdrName:SetWidth(140)
 
     local hdrCount = TM.ui.Font(headerRow, 10, '数量', {0.6, 0.6, 0.6})
-    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 210, 0)
+    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 224, 0)
     hdrCount:SetWidth(35)
 
     local hdrPrice = TM.ui.Font(headerRow, 10, '价格', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 248, 0)
-    hdrPrice:SetWidth(100)
+    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 262, 0)
+    hdrPrice:SetWidth(95)
 
-    local hdrSeller = TM.ui.Font(headerRow, 10, '卖家', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 352, 0)
-    hdrSeller:SetWidth(110)
+    local hdrSeller = TM.ui.Font(headerRow, 10, '玩家', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 360, 0)
+    hdrSeller:SetWidth(105)
 
     local hdrStatus = TM.ui.Font(headerRow, 10, '状态', {0.6, 0.6, 0.6})
-    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 466, 0)
+    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 470, 0)
     hdrStatus:SetWidth(50)
 
     local hdrNote = TM.ui.Font(headerRow, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrNote:SetPoint('LEFT', headerRow, 'LEFT', 520, 0)
-    hdrNote:SetWidth(164)
+    hdrNote:SetPoint('LEFT', headerRow, 'LEFT', 524, 0)
+    hdrNote:SetWidth(140)
 
     -- ============================================================
     -- 商品列表区域（带图标）
@@ -303,7 +336,7 @@ TM.modules['browse'] = function()
     listScroll:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -102)
 
     -- 浏览空状态占位
-    local browseEmptyText = TM.ui.Font(listScroll.content, 11, '暂无商品。尝试搜索其他关键词或清除筛选条件。', {0.5, 0.5, 0.5})
+    local browseEmptyText = TM.ui.Font(listScroll.content, 11, '暂无记录。尝试搜索其他关键词或清除筛选条件。', {0.5, 0.5, 0.5})
     browseEmptyText:SetPoint('CENTER', listScroll, 'CENTER', 0, 0)
     browseEmptyText:SetWidth(400)
     browseEmptyText:Hide()
@@ -334,17 +367,25 @@ TM.modules['browse'] = function()
 
         -- 物品图标
         local itemIcon = row:CreateTexture(nil, 'ARTWORK')
-        itemIcon:SetWidth(28)
-        itemIcon:SetHeight(28)
+        itemIcon:SetWidth(26)
+        itemIcon:SetHeight(26)
         itemIcon:SetPoint('LEFT', row, 'LEFT', 2, 0)
         itemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
         row.itemIcon = itemIcon
 
+        -- 类型标签
+        local typeText = row:CreateFontString(nil, 'OVERLAY')
+        typeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        typeText:SetPoint('LEFT', row, 'LEFT', 32, 0)
+        typeText:SetWidth(45)
+        typeText:SetJustifyH('CENTER')
+        row.typeText = typeText
+
         -- 物品名称
         local nameText = row:CreateFontString(nil, 'OVERLAY')
         nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        nameText:SetPoint('LEFT', row, 'LEFT', 36, 0)
-        nameText:SetWidth(170)
+        nameText:SetPoint('LEFT', row, 'LEFT', 80, 0)
+        nameText:SetWidth(140)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 1, 1)
         row.nameText = nameText
@@ -352,7 +393,7 @@ TM.modules['browse'] = function()
         -- 数量
         local countText = row:CreateFontString(nil, 'OVERLAY')
         countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 210, 0)
+        countText:SetPoint('LEFT', row, 'LEFT', 224, 0)
         countText:SetWidth(35)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
@@ -361,23 +402,23 @@ TM.modules['browse'] = function()
         -- 价格
         local priceText = row:CreateFontString(nil, 'OVERLAY')
         priceText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        priceText:SetPoint('LEFT', row, 'LEFT', 248, 0)
-        priceText:SetWidth(100)
+        priceText:SetPoint('LEFT', row, 'LEFT', 262, 0)
+        priceText:SetWidth(95)
         priceText:SetJustifyH('LEFT')
         row.priceText = priceText
 
-        -- 卖家（含信誉）
+        -- 玩家（含信誉）
         local sellerText = row:CreateFontString(nil, 'OVERLAY')
         sellerText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        sellerText:SetPoint('LEFT', row, 'LEFT', 352, 0)
-        sellerText:SetWidth(110)
+        sellerText:SetPoint('LEFT', row, 'LEFT', 360, 0)
+        sellerText:SetWidth(105)
         sellerText:SetJustifyH('LEFT')
         row.sellerText = sellerText
 
         -- 状态（在线/离线）
         local statusText = row:CreateFontString(nil, 'OVERLAY')
         statusText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        statusText:SetPoint('LEFT', row, 'LEFT', 466, 0)
+        statusText:SetPoint('LEFT', row, 'LEFT', 470, 0)
         statusText:SetWidth(50)
         statusText:SetJustifyH('CENTER')
         row.statusText = statusText
@@ -385,8 +426,8 @@ TM.modules['browse'] = function()
         -- 备注
         local noteText = row:CreateFontString(nil, 'OVERLAY')
         noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        noteText:SetPoint('LEFT', row, 'LEFT', 520, 0)
-        noteText:SetWidth(164)
+        noteText:SetPoint('LEFT', row, 'LEFT', 524, 0)
+        noteText:SetWidth(140)
         noteText:SetJustifyH('LEFT')
         noteText:SetTextColor(0.9, 0.9, 0.7)
         row.noteText = noteText
@@ -407,29 +448,43 @@ TM.modules['browse'] = function()
                 end
                 this.bg:SetVertexColor(0.15, 0.3, 0.6, 0.9)
                 browseContent.selectedListing = this.listing
+                -- 动态更新密语按钮文字
+                if this.listing._type == 'buy' then
+                    whisperBtn.text:SetText('密语买家')
+                else
+                    whisperBtn.text:SetText('密语卖家')
+                end
             end
         end)
 
-        -- Tooltip（优先使用原生 SetHyperlink 展示完整物品属性）
+        -- Tooltip（根据类型显示不同信息）
         row:SetScript('OnEnter', function()
             if not this.listing then return end
+            local item = this.listing
             GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
-            -- 当 itemId 有效时，使用原生 Tooltip 显示完整物品信息
-            TM:ShowItemTooltip(this.listing.itemId, this.listing.itemName, {1, 1, 1})
-            -- 追加自定义交易信息
-            GameTooltip:AddLine(' ')
-            GameTooltip:AddLine('数量: ' .. (this.listing.count or 1), 0.8, 0.8, 0.8)
-            GameTooltip:AddLine('价格: ' .. TM:FormatPrice(this.listing.priceGold, this.listing.priceSilver, this.listing.priceCopper), 1, 0.82, 0)
-            GameTooltip:AddLine('卖家: ' .. (this.listing.seller or ''), 0.5, 0.8, 1)
-            -- 信誉信息
-            local repInfo = TM:GetReputationInfo(this.listing.seller or '')
-            local repLabel, repColor = TM.GetReputationLevel(this.listing.seller or '')
-            GameTooltip:AddLine('信誉: ' .. repLabel .. ' (' .. repInfo.trades .. '次交易)', repColor[1], repColor[2], repColor[3])
-            if this.listing.note and this.listing.note ~= '' then
-                GameTooltip:AddLine('备注: ' .. this.listing.note, 0.9, 0.9, 0.7)
+            if item._type == 'buy' then
+                TM:ShowItemTooltip(item.itemId, '求购: ' .. (item.itemName or ''), {1, 0.82, 0})
+                GameTooltip:AddLine(' ')
+                GameTooltip:AddLine('需要数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
+                GameTooltip:AddLine('预算上限: ' .. TM:FormatPrice(item.maxGold, item.maxSilver, item.maxCopper), 1, 0.82, 0)
+                GameTooltip:AddLine('买家: ' .. (item.buyer or ''), 0.5, 0.8, 1)
+                local repLabel, repColor = TM.GetReputationLevel(item.buyer or '')
+                GameTooltip:AddLine('信誉: ' .. repLabel, repColor[1], repColor[2], repColor[3])
+            else
+                TM:ShowItemTooltip(item.itemId, item.itemName, {1, 1, 1})
+                GameTooltip:AddLine(' ')
+                GameTooltip:AddLine('数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
+                GameTooltip:AddLine('价格: ' .. TM:FormatPrice(item.priceGold, item.priceSilver, item.priceCopper), 1, 0.82, 0)
+                GameTooltip:AddLine('卖家: ' .. (item.seller or ''), 0.5, 0.8, 1)
+                local repInfo = TM:GetReputationInfo(item.seller or '')
+                local repLabel, repColor = TM.GetReputationLevel(item.seller or '')
+                GameTooltip:AddLine('信誉: ' .. repLabel .. ' (' .. repInfo.trades .. '次交易)', repColor[1], repColor[2], repColor[3])
             end
-            GameTooltip:AddLine('发布于: ' .. TM:FormatTimeAgo(this.listing.postedAt or 0), 0.6, 0.6, 0.6)
-            if this.listing.source == 'sync' then
+            if item.note and item.note ~= '' then
+                GameTooltip:AddLine('备注: ' .. item.note, 0.9, 0.9, 0.7)
+            end
+            GameTooltip:AddLine('发布于: ' .. TM:FormatTimeAgo(item.postedAt or 0), 0.6, 0.6, 0.6)
+            if item.source == 'sync' then
                 GameTooltip:AddLine('(通过网络同步)', 0.5, 0.5, 0.5)
             end
             GameTooltip:Show()
@@ -474,26 +529,40 @@ TM.modules['browse'] = function()
     local nodeText = TM.ui.Font(bottomBar, 9, '在线节点: 0', {0.5, 0.7, 0.5})
     nodeText:SetPoint('LEFT', nextBtn, 'RIGHT', 10, 0)
 
-    local whisperBtn = TM.ui.Button(bottomBar, '密语卖家', 90, 26)
+    whisperBtn = TM.ui.Button(bottomBar, '密语', 90, 26)
     whisperBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', -70, 0)
     whisperBtn:SetScript('OnClick', function()
         local listing = browseContent.selectedListing
-        if listing and listing.seller then
+        if listing and listing._player then
             local safeName = string.gsub(listing.itemName or '', '|', '')
             local msg
-            if TM_Data.config.whisperFormat == 'en' then
-                msg = '[TurtleMarket] I want to buy: ' .. safeName
-                    .. ' x' .. (listing.count or 1) .. ' for ' .. (listing.priceGold or 0)
-                    .. 'g ' .. (listing.priceSilver or 0) .. 's ' .. (listing.priceCopper or 0) .. 'c'
+            if listing._type == 'buy' then
+                -- 密语买家：告知有货
+                if TM_Data.config.whisperFormat == 'en' then
+                    msg = '[TurtleMarket] I have: ' .. safeName
+                        .. ' x' .. (listing.count or 1) .. ' - your budget: ' .. (listing.maxGold or 0)
+                        .. 'g ' .. (listing.maxSilver or 0) .. 's ' .. (listing.maxCopper or 0) .. 'c'
+                else
+                    msg = '[龟市] 我有: ' .. safeName
+                        .. ' x' .. (listing.count or 1) .. ', 你的预算: ' .. (listing.maxGold or 0)
+                        .. 'g' .. (listing.maxSilver or 0) .. 's' .. (listing.maxCopper or 0) .. 'c'
+                end
             else
-                msg = '[龟市] 我想购买: ' .. safeName
-                    .. ' x' .. (listing.count or 1) .. ', 出价 ' .. (listing.priceGold or 0)
-                    .. 'g' .. (listing.priceSilver or 0) .. 's' .. (listing.priceCopper or 0) .. 'c'
+                -- 密语卖家：想要购买
+                if TM_Data.config.whisperFormat == 'en' then
+                    msg = '[TurtleMarket] I want to buy: ' .. safeName
+                        .. ' x' .. (listing.count or 1) .. ' for ' .. (listing.priceGold or 0)
+                        .. 'g ' .. (listing.priceSilver or 0) .. 's ' .. (listing.priceCopper or 0) .. 'c'
+                else
+                    msg = '[龟市] 我想购买: ' .. safeName
+                        .. ' x' .. (listing.count or 1) .. ', 出价 ' .. (listing.priceGold or 0)
+                        .. 'g' .. (listing.priceSilver or 0) .. 's' .. (listing.priceCopper or 0) .. 'c'
+                end
             end
-            SendChatMessage(msg, 'WHISPER', nil, listing.seller)
-            DEFAULT_CHAT_FRAME:AddMessage('|cff00ff00[龟市] 已向 ' .. listing.seller .. ' 发送密语|r')
+            SendChatMessage(msg, 'WHISPER', nil, listing._player)
+            DEFAULT_CHAT_FRAME:AddMessage('|cff00ff00[龟市] 已向 ' .. listing._player .. ' 发送密语|r')
         else
-            DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择一件商品。|r')
+            DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择一条记录。|r')
         end
     end)
 
@@ -506,13 +575,13 @@ TM.modules['browse'] = function()
     -- 按钮 Tooltip
     TM.ui.SetTooltip(searchBtn, '按物品名搜索')
     TM.ui.SetTooltip(clearBtn, '清除搜索和所有筛选条件')
-    TM.ui.SetTooltip(applyFilterBtn, '应用价格和卖家筛选')
-    TM.ui.SetTooltip(onlineOnlyBtn, '仅显示最近活跃的卖家')
-    TM.ui.SetTooltip(whisperBtn, '向选中商品的卖家发送购买密语')
+    TM.ui.SetTooltip(applyFilterBtn, '应用价格和玩家筛选')
+    TM.ui.SetTooltip(onlineOnlyBtn, '仅显示最近活跃的玩家')
+    TM.ui.SetTooltip(whisperBtn, '向选中记录的玩家发送密语')
     TM.ui.SetTooltip(refreshBtn, '刷新商品列表')
 
     -- ============================================================
-    -- 求购内容容器
+    -- 求购内容容器（纯发布表单）
     -- ============================================================
     local wantContent = CreateFrame('Frame', 'TM_WantContent', main)
     wantContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 8, -58)
@@ -520,43 +589,38 @@ TM.modules['browse'] = function()
     wantContent:Hide()
     TM.frames.wantContent = wantContent
 
-    -- ============================================================
-    -- 求购发布表单（可折叠）
-    -- ============================================================
-    local wantFormVisible = false
     local wantItemId = 0
     local wantItemTexture = nil
 
-    local wantFormToggle = TM.ui.Button(wantContent, '发布求购', 100, 26, false, {1, 0.82, 0})
-    wantFormToggle:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, 0)
+    -- 标题
+    local wantTitle = TM.ui.Font(wantContent, 13, '输入你想要购买的物品:', {0.8, 0.8, 0.8})
+    wantTitle:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, 0)
 
-    -- 折叠区域
-    local wantForm = CreateFrame('Frame', nil, wantContent)
-    wantForm:SetWidth(696)
-    wantForm:SetHeight(130)
-    wantForm:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -30)
-    wantForm:SetBackdrop({
+    -- 物品预览框（和出售Tab风格一致）
+    local wantItemFrame = CreateFrame('Frame', nil, wantContent)
+    wantItemFrame:SetWidth(400)
+    wantItemFrame:SetHeight(52)
+    wantItemFrame:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -30)
+    wantItemFrame:SetBackdrop({
         bgFile = 'Interface\\Buttons\\WHITE8X8',
         edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
-        edgeSize = 10,
+        edgeSize = 12,
         insets = { left = 3, right = 3, top = 3, bottom = 3 }
     })
-    wantForm:SetBackdropColor(0.08, 0.08, 0.12, 0.9)
-    wantForm:SetBackdropBorderColor(0.3, 0.3, 0.5, 0.8)
-    wantForm:Hide()
+    wantItemFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
+    wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
 
-    -- 物品图标 + 输入框
-    local wantItemIcon = wantForm:CreateTexture(nil, 'ARTWORK')
-    wantItemIcon:SetWidth(24)
-    wantItemIcon:SetHeight(24)
-    wantItemIcon:SetPoint('TOPLEFT', wantForm, 'TOPLEFT', 6, -6)
+    local wantItemIcon = wantItemFrame:CreateTexture(nil, 'ARTWORK')
+    wantItemIcon:SetWidth(40)
+    wantItemIcon:SetHeight(40)
+    wantItemIcon:SetPoint('LEFT', wantItemFrame, 'LEFT', 6, 0)
     wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
 
-    local wantNameBox = TM.ui.Editbox(wantForm, 240, 26, 120)
-    wantNameBox:SetPoint('LEFT', wantItemIcon, 'RIGHT', 4, 0)
+    local wantNameBox = TM.ui.Editbox(wantItemFrame, 300, 30, 120)
+    wantNameBox:SetPoint('LEFT', wantItemIcon, 'RIGHT', 8, 0)
 
-    local wantNameHint = TM.ui.Font(wantForm, 10, 'Shift+点击链接 或 输入名称', {0.5, 0.5, 0.5}, 'LEFT')
-    wantNameHint:SetPoint('LEFT', wantNameBox, 'RIGHT', 6, 0)
+    local wantNameHint = TM.ui.Font(wantContent, 10, 'Shift+点击物品链接 或 直接输入物品名称', {0.5, 0.5, 0.5}, 'LEFT')
+    wantNameHint:SetPoint('TOPLEFT', wantItemFrame, 'BOTTOMLEFT', 0, -10)
 
     --- 解析输入框内容：检测物品链接或纯文本
     local function ParseWantInput()
@@ -571,10 +635,12 @@ TM.modules['browse'] = function()
                 wantItemTexture = texture
                 wantItemIcon:SetTexture(texture)
             end
+            wantItemFrame:SetBackdropBorderColor(0.3, 0.7, 1, 1)
         else
             wantItemId = 0
             wantItemTexture = nil
             wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
+            wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
         end
     end
 
@@ -589,48 +655,52 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    -- 第二行：数量 + 预算 + 发布按钮
-    local wfQtyLabel = TM.ui.Font(wantForm, 10, '数量:', {0.7, 0.7, 0.7})
-    wfQtyLabel:SetPoint('TOPLEFT', wantForm, 'TOPLEFT', 6, -40)
+    -- 数量 + 预算
+    local wfQtyLabel = TM.ui.Font(wantContent, 12, '数量:', {0.7, 0.7, 0.7})
+    wfQtyLabel:SetPoint('TOPLEFT', wantItemFrame, 'BOTTOMLEFT', 0, -48)
 
-    local wfCountBox = TM.ui.Editbox(wantForm, 40, 20, 5)
-    wfCountBox:SetPoint('LEFT', wfQtyLabel, 'RIGHT', 4, 0)
+    local wfCountBox = TM.ui.Editbox(wantContent, 60, 30, 5)
+    wfCountBox:SetPoint('LEFT', wfQtyLabel, 'RIGHT', 8, 0)
     wfCountBox:SetText('1')
 
-    local wfGoldLabel = TM.ui.Font(wantForm, 10, '预算 金:', {1, 0.84, 0})
-    wfGoldLabel:SetPoint('LEFT', wfCountBox, 'RIGHT', 10, 0)
+    local wfBudgetLabel = TM.ui.Font(wantContent, 12, '预算:', {0.7, 0.7, 0.7})
+    wfBudgetLabel:SetPoint('TOPLEFT', wfQtyLabel, 'TOPLEFT', 0, -50)
 
-    local wfGoldBox = TM.ui.Editbox(wantForm, 40, 20, 5)
-    wfGoldBox:SetPoint('LEFT', wfGoldLabel, 'RIGHT', 2, 0)
+    local wfGoldLabel = TM.ui.Font(wantContent, 12, '金:', {1, 0.84, 0})
+    wfGoldLabel:SetPoint('LEFT', wfBudgetLabel, 'RIGHT', 8, 0)
+
+    local wfGoldBox = TM.ui.Editbox(wantContent, 60, 30, 5)
+    wfGoldBox:SetPoint('LEFT', wfGoldLabel, 'RIGHT', 4, 0)
     wfGoldBox:SetText('0')
 
-    local wfSilverLabel = TM.ui.Font(wantForm, 10, '银:', {0.78, 0.78, 0.78})
-    wfSilverLabel:SetPoint('LEFT', wfGoldBox, 'RIGHT', 4, 0)
+    local wfSilverLabel = TM.ui.Font(wantContent, 12, '银:', {0.78, 0.78, 0.78})
+    wfSilverLabel:SetPoint('LEFT', wfGoldBox, 'RIGHT', 10, 0)
 
-    local wfSilverBox = TM.ui.Editbox(wantForm, 30, 20, 3)
-    wfSilverBox:SetPoint('LEFT', wfSilverLabel, 'RIGHT', 2, 0)
+    local wfSilverBox = TM.ui.Editbox(wantContent, 50, 30, 3)
+    wfSilverBox:SetPoint('LEFT', wfSilverLabel, 'RIGHT', 4, 0)
     wfSilverBox:SetText('0')
 
-    local wfCopperLabel = TM.ui.Font(wantForm, 10, '铜:', {0.93, 0.65, 0.37})
-    wfCopperLabel:SetPoint('LEFT', wfSilverBox, 'RIGHT', 4, 0)
+    local wfCopperLabel = TM.ui.Font(wantContent, 12, '铜:', {0.93, 0.65, 0.37})
+    wfCopperLabel:SetPoint('LEFT', wfSilverBox, 'RIGHT', 10, 0)
 
-    local wfCopperBox = TM.ui.Editbox(wantForm, 30, 20, 3)
-    wfCopperBox:SetPoint('LEFT', wfCopperLabel, 'RIGHT', 2, 0)
+    local wfCopperBox = TM.ui.Editbox(wantContent, 50, 30, 3)
+    wfCopperBox:SetPoint('LEFT', wfCopperLabel, 'RIGHT', 4, 0)
     wfCopperBox:SetText('0')
 
-    -- 第三行：备注
-    local wfNoteLabel = TM.ui.Font(wantForm, 10, '备注:', {0.7, 0.7, 0.7})
-    wfNoteLabel:SetPoint('TOPLEFT', wantForm, 'TOPLEFT', 6, -68)
+    -- 备注
+    local wfNoteLabel = TM.ui.Font(wantContent, 12, '备注:', {0.7, 0.7, 0.7})
+    wfNoteLabel:SetPoint('TOPLEFT', wfBudgetLabel, 'TOPLEFT', 0, -50)
 
-    local wfNoteBox = TM.ui.Editbox(wantForm, 240, 20, TM.const.MAX_NOTE_LEN)
-    wfNoteBox:SetPoint('LEFT', wfNoteLabel, 'RIGHT', 4, 0)
+    local wfNoteBox = TM.ui.Editbox(wantContent, 360, 30, TM.const.MAX_NOTE_LEN)
+    wfNoteBox:SetPoint('LEFT', wfNoteLabel, 'RIGHT', 8, 0)
     wfNoteBox:SetText('')
 
-    local wfNoteHint = TM.ui.Font(wantForm, 9, '(可选) 在线时间、小号名等', {0.5, 0.5, 0.5}, 'LEFT')
-    wfNoteHint:SetPoint('LEFT', wfNoteBox, 'RIGHT', 6, 0)
+    local wfNoteHint = TM.ui.Font(wantContent, 9, '(可选) 在线时间、小号名等', {0.5, 0.5, 0.5}, 'LEFT')
+    wfNoteHint:SetPoint('LEFT', wfNoteBox, 'RIGHT', 8, 0)
 
-    local wfSubmitBtn = TM.ui.Button(wantForm, '发布', 55, 20, false, {0, 1, 0})
-    wfSubmitBtn:SetPoint('LEFT', wfNoteBox, 'RIGHT', 140, 0)
+    -- 发布按钮（独立一行）
+    local wfSubmitBtn = TM.ui.Button(wantContent, '发布求购', 160, 38, false, {0, 1, 0})
+    wfSubmitBtn:SetPoint('TOPLEFT', wfNoteLabel, 'TOPLEFT', 0, -56)
     wfSubmitBtn:SetScript('OnClick', function()
         ParseWantInput()
         local itemName = wantNameBox:GetText() or ''
@@ -678,310 +748,17 @@ TM.modules['browse'] = function()
         wantItemId = 0
         wantItemTexture = nil
         wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
+        wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
         wfNoteBox:SetText('')
 
-        TM:RefreshUI('wants')
+        TM:RefreshUI('browse')
         TM:RefreshUI('mylistings')
     end)
 
-    -- 折叠切换逻辑（前向声明在后面定义的变量）
-    local wantSortLabel, wantSearchBox
-    local wantListYOffset = -28  -- 列表默认偏移（表单隐藏时）
-
-    local function UpdateWantLayout()
-        if wantFormVisible then
-            wantForm:Show()
-            wantFormToggle.text:SetText('收起')
-            wantListYOffset = -168
-        else
-            wantForm:Hide()
-            wantFormToggle.text:SetText('发布求购')
-            wantListYOffset = -32
-        end
-        -- 动态调整下方元素位置
-        if wantSortLabel then
-            wantSortLabel:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, wantListYOffset)
-        end
-        if wantSearchBox then
-            wantSearchBox:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 100, 0)
-        end
-    end
-
-    wantFormToggle:SetScript('OnClick', function()
-        wantFormVisible = not wantFormVisible
-        UpdateWantLayout()
-    end)
-
-    -- 求购搜索栏（在发布按钮右侧）
-    wantSearchBox = TM.ui.Editbox(wantContent, 220, 26, 50)
-    wantSearchBox:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 100, 0)
-    wantSearchBox:SetScript('OnEnterPressed', function()
-        wantQuery = this:GetText() or ''
-        wantPage = 1
-        TM:RefreshUI('wants')
-        this:ClearFocus()
-    end)
-
-    local wantSearchBtn = TM.ui.Button(wantContent, '搜索', 55, 26)
-    wantSearchBtn:SetPoint('LEFT', wantSearchBox, 'RIGHT', 4, 0)
-    wantSearchBtn:SetScript('OnClick', function()
-        wantQuery = wantSearchBox:GetText() or ''
-        wantPage = 1
-        TM:RefreshUI('wants')
-    end)
-
-    local wantClearBtn = TM.ui.Button(wantContent, '清除', 50, 26)
-    wantClearBtn:SetPoint('LEFT', wantSearchBtn, 'RIGHT', 4, 0)
-    wantClearBtn:SetScript('OnClick', function()
-        wantSearchBox:SetText('')
-        wantQuery = ''
-        wantPage = 1
-        TM:RefreshUI('wants')
-    end)
-
-    -- 求购排序
-    wantSortLabel = TM.ui.Font(wantContent, 10, '排序:', {0.7, 0.7, 0.7})
-    wantSortLabel:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -32)
-
-    local wantSortNames = {'预算↑', '预算↓', '时间'}
-    local wantSortKeys = {'price_asc', 'price_desc', 'time'}
-    for i = 1, 3 do
-        local btn = TM.ui.Button(wantContent, wantSortNames[i], 65, 22)
-        btn:SetPoint('LEFT', wantSortLabel, 'RIGHT', 4 + (i - 1) * 69, 0)
-        btn.sortKey = wantSortKeys[i]
-        btn:SetScript('OnClick', function()
-            wantSort = this.sortKey
-            wantPage = 1
-            if TM_Data and TM_Data.config then TM_Data.config.wantSort = wantSort end
-            TM:RefreshUI('wants')
-        end)
-    end
-
-    -- 求购列表表头
-    local wantHeaderRow = CreateFrame('Frame', nil, wantContent)
-    wantHeaderRow:SetWidth(696)
-    wantHeaderRow:SetHeight(18)
-    wantHeaderRow:SetPoint('TOPLEFT', wantSortLabel, 'BOTTOMLEFT', 0, -4)
-
-    local wantHeaderBg = wantHeaderRow:CreateTexture(nil, 'BACKGROUND')
-    wantHeaderBg:SetTexture('Interface\\Buttons\\WHITE8X8')
-    wantHeaderBg:SetAllPoints(wantHeaderRow)
-    wantHeaderBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
-
-    local whdrName = TM.ui.Font(wantHeaderRow, 10, '求购物品', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrName:SetPoint('LEFT', wantHeaderRow, 'LEFT', 8, 0)
-    whdrName:SetWidth(170)
-
-    local whdrCount = TM.ui.Font(wantHeaderRow, 10, '数量', {0.6, 0.6, 0.6})
-    whdrCount:SetPoint('LEFT', wantHeaderRow, 'LEFT', 182, 0)
-    whdrCount:SetWidth(35)
-
-    local whdrBudget = TM.ui.Font(wantHeaderRow, 10, '预算上限', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrBudget:SetPoint('LEFT', wantHeaderRow, 'LEFT', 220, 0)
-    whdrBudget:SetWidth(100)
-
-    local whdrBuyer = TM.ui.Font(wantHeaderRow, 10, '买家', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrBuyer:SetPoint('LEFT', wantHeaderRow, 'LEFT', 324, 0)
-    whdrBuyer:SetWidth(110)
-
-    local whdrWStatus = TM.ui.Font(wantHeaderRow, 10, '状态', {0.6, 0.6, 0.6})
-    whdrWStatus:SetPoint('LEFT', wantHeaderRow, 'LEFT', 438, 0)
-    whdrWStatus:SetWidth(50)
-
-    local whdrNote = TM.ui.Font(wantHeaderRow, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
-    whdrNote:SetPoint('LEFT', wantHeaderRow, 'LEFT', 492, 0)
-    whdrNote:SetWidth(192)
-
-    -- 求购列表滚动区域
-    local wantScroll = TM.ui.Scrollframe(wantContent, 696, 380, 'TM_WantScroll')
-    wantScroll:SetPoint('TOPLEFT', wantHeaderRow, 'BOTTOMLEFT', 0, -2)
-
-    local wantRows = {}
-    for i = 1, ITEMS_PER_PAGE do
-        local row = CreateFrame('Button', 'TM_WantRow' .. i, wantScroll.content)
-        row:SetWidth(686)
-        row:SetHeight(32)
-        row:SetPoint('TOPLEFT', wantScroll.content, 'TOPLEFT', 0, -(i - 1) * 33)
-
-        local bg = row:CreateTexture(nil, 'BACKGROUND')
-        bg:SetTexture('Interface\\Buttons\\WHITE8X8')
-        bg:SetAllPoints(row)
-        if math.mod(i, 2) == 0 then
-            bg:SetVertexColor(0.15, 0.15, 0.18, 0.8)
-        else
-            bg:SetVertexColor(0.08, 0.08, 0.10, 0.6)
-        end
-        row.bg = bg
-
-        local hl = row:CreateTexture(nil, 'HIGHLIGHT')
-        hl:SetTexture('Interface\\Buttons\\WHITE8X8')
-        hl:SetAllPoints(row)
-        hl:SetAlpha(0.1)
-
-        -- 物品名称
-        local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        nameText:SetPoint('LEFT', row, 'LEFT', 8, 0)
-        nameText:SetWidth(170)
-        nameText:SetJustifyH('LEFT')
-        nameText:SetTextColor(1, 0.82, 0)
-        row.nameText = nameText
-
-        -- 数量
-        local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 182, 0)
-        countText:SetWidth(35)
-        countText:SetJustifyH('CENTER')
-        countText:SetTextColor(0.8, 0.8, 0.8)
-        row.countText = countText
-
-        -- 预算
-        local budgetText = row:CreateFontString(nil, 'OVERLAY')
-        budgetText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        budgetText:SetPoint('LEFT', row, 'LEFT', 220, 0)
-        budgetText:SetWidth(100)
-        budgetText:SetJustifyH('LEFT')
-        row.budgetText = budgetText
-
-        -- 买家（含信誉）
-        local buyerText = row:CreateFontString(nil, 'OVERLAY')
-        buyerText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        buyerText:SetPoint('LEFT', row, 'LEFT', 324, 0)
-        buyerText:SetWidth(110)
-        buyerText:SetJustifyH('LEFT')
-        row.buyerText = buyerText
-
-        -- 状态
-        local statusText = row:CreateFontString(nil, 'OVERLAY')
-        statusText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        statusText:SetPoint('LEFT', row, 'LEFT', 438, 0)
-        statusText:SetWidth(50)
-        statusText:SetJustifyH('CENTER')
-        row.statusText = statusText
-
-        -- 备注
-        local noteText = row:CreateFontString(nil, 'OVERLAY')
-        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        noteText:SetPoint('LEFT', row, 'LEFT', 492, 0)
-        noteText:SetWidth(192)
-        noteText:SetJustifyH('LEFT')
-        noteText:SetTextColor(0.9, 0.9, 0.7)
-        row.noteText = noteText
-
-        row.want = nil
-        row:Hide()
-
-        row:SetScript('OnClick', function()
-            if this.want then
-                for j = 1, ITEMS_PER_PAGE do
-                    wantRows[j].bg:SetVertexColor(
-                        math.mod(j, 2) == 0 and 0.12 or 0.08,
-                        math.mod(j, 2) == 0 and 0.10 or 0.06,
-                        math.mod(j, 2) == 0 and 0.10 or 0.06,
-                        math.mod(j, 2) == 0 and 0.8 or 0.6
-                    )
-                end
-                this.bg:SetVertexColor(0.15, 0.3, 0.6, 0.9)
-                wantContent.selectedWant = this.want
-            end
-        end)
-
-        -- Tooltip（优先使用原生 SetHyperlink 展示完整物品属性）
-        row:SetScript('OnEnter', function()
-            if not this.want then return end
-            GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
-            -- 当 itemId 有效时，使用原生 Tooltip 显示完整物品信息
-            TM:ShowItemTooltip(this.want.itemId, '求购: ' .. (this.want.itemName or ''), {1, 0.82, 0})
-            -- 追加自定义交易信息
-            GameTooltip:AddLine(' ')
-            GameTooltip:AddLine('需要数量: ' .. (this.want.count or 1), 0.8, 0.8, 0.8)
-            GameTooltip:AddLine('预算上限: ' .. TM:FormatPrice(this.want.maxGold, this.want.maxSilver, this.want.maxCopper), 1, 0.82, 0)
-            GameTooltip:AddLine('买家: ' .. (this.want.buyer or ''), 0.5, 0.8, 1)
-            local repLabel, repColor = TM.GetReputationLevel(this.want.buyer or '')
-            GameTooltip:AddLine('信誉: ' .. repLabel, repColor[1], repColor[2], repColor[3])
-            if this.want.note and this.want.note ~= '' then
-                GameTooltip:AddLine('备注: ' .. this.want.note, 0.9, 0.9, 0.7)
-            end
-            GameTooltip:AddLine('发布于: ' .. TM:FormatTimeAgo(this.want.postedAt or 0), 0.6, 0.6, 0.6)
-            GameTooltip:Show()
-        end)
-        row:SetScript('OnLeave', function() GameTooltip:Hide() end)
-
-        wantRows[i] = row
-    end
-
-    wantScroll.content:SetHeight(ITEMS_PER_PAGE * 33)
-
-    -- 求购空状态占位
-    local wantEmptyText = TM.ui.Font(wantScroll.content, 11, '暂无求购信息。', {0.5, 0.5, 0.5})
-    wantEmptyText:SetPoint('CENTER', wantScroll, 'CENTER', 0, 0)
-    wantEmptyText:SetWidth(300)
-    wantEmptyText:Hide()
-
-    -- 求购底部栏
-    local wantBottomBar = CreateFrame('Frame', nil, wantContent)
-    wantBottomBar:SetWidth(696)
-    wantBottomBar:SetHeight(34)
-    wantBottomBar:SetPoint('BOTTOMLEFT', wantContent, 'BOTTOMLEFT', 0, 0)
-
-    local wantPageText = TM.ui.Font(wantBottomBar, 10, '第 1/1 页', {0.7, 0.7, 0.7})
-    wantPageText:SetPoint('LEFT', wantBottomBar, 'LEFT', 0, 0)
-
-    local wantPrevBtn = TM.ui.Button(wantBottomBar, '<', 32, 26)
-    wantPrevBtn:SetPoint('LEFT', wantPageText, 'RIGHT', 6, 0)
-    wantPrevBtn:SetScript('OnClick', function()
-        if wantPage > 1 then
-            wantPage = wantPage - 1
-            TM:RefreshUI('wants')
-        end
-    end)
-
-    local wantNextBtn = TM.ui.Button(wantBottomBar, '>', 32, 26)
-    wantNextBtn:SetPoint('LEFT', wantPrevBtn, 'RIGHT', 3, 0)
-    wantNextBtn:SetScript('OnClick', function()
-        local totalPages = math.max(1, math.ceil(table.getn(wantResults) / ITEMS_PER_PAGE))
-        if wantPage < totalPages then
-            wantPage = wantPage + 1
-            TM:RefreshUI('wants')
-        end
-    end)
-
-    local whisperBuyerBtn = TM.ui.Button(wantBottomBar, '密语买家', 90, 26)
-    whisperBuyerBtn:SetPoint('RIGHT', wantBottomBar, 'RIGHT', -60, 0)
-    whisperBuyerBtn:SetScript('OnClick', function()
-        local want = wantContent.selectedWant
-        if want and want.buyer then
-            local safeName = string.gsub(want.itemName or '', '|', '')
-            local msg
-            if TM_Data.config.whisperFormat == 'en' then
-                msg = '[TurtleMarket] I have: ' .. safeName
-                    .. ' x' .. (want.count or 1) .. ' - your budget: ' .. (want.maxGold or 0)
-                    .. 'g ' .. (want.maxSilver or 0) .. 's ' .. (want.maxCopper or 0) .. 'c'
-            else
-                msg = '[龟市] 我有: ' .. safeName
-                    .. ' x' .. (want.count or 1) .. ', 你的预算: ' .. (want.maxGold or 0)
-                    .. 'g' .. (want.maxSilver or 0) .. 's' .. (want.maxCopper or 0) .. 'c'
-            end
-            SendChatMessage(msg, 'WHISPER', nil, want.buyer)
-            DEFAULT_CHAT_FRAME:AddMessage('|cff00ff00[龟市] 已向 ' .. want.buyer .. ' 发送密语|r')
-        else
-            DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择一条求购。|r')
-        end
-    end)
-
-    local wantRefreshBtn = TM.ui.Button(wantBottomBar, '刷新', 60, 26)
-    wantRefreshBtn:SetPoint('RIGHT', wantBottomBar, 'RIGHT', 0, 0)
-    wantRefreshBtn:SetScript('OnClick', function()
-        TM:RefreshUI('wants')
-    end)
-
-    -- 求购按钮 Tooltip
-    TM.ui.SetTooltip(wantFormToggle, '展开/收起求购发布表单')
-    TM.ui.SetTooltip(wantSearchBtn, '按物品名搜索求购')
-    TM.ui.SetTooltip(wantClearBtn, '清除搜索条件')
-    TM.ui.SetTooltip(whisperBuyerBtn, '向选中求购的买家发送密语')
-    TM.ui.SetTooltip(wantRefreshBtn, '刷新求购列表')
+    -- 提示文字
+    local wantHint = TM.ui.Font(wantContent, 10, '提示: 发布后可在「浏览」Tab 查看所有求购信息。这是 P2P 公告板，仅安装了龟市的玩家可以看到。', {0.5, 0.5, 0.5})
+    wantHint:SetPoint('BOTTOMLEFT', wantContent, 'BOTTOMLEFT', 0, 4)
+    wantHint:SetWidth(500)
 
     -- ============================================================
     -- 历史内容面板
@@ -1054,12 +831,13 @@ TM.modules['browse'] = function()
             maxPrice = filterMaxPrice,
             seller = filterSeller,
             onlineOnly = filterOnlineOnly,
+            listingType = filterListingType,
         }
-        currentResults = TM:SearchListings(currentQuery, currentSort, filters)
+        currentResults = TM:SearchAll(currentQuery, currentSort, filters)
         local totalPages = math.max(1, math.ceil(table.getn(currentResults) / ITEMS_PER_PAGE))
         if currentPage > totalPages then currentPage = totalPages end
 
-        pageText:SetText('第 ' .. currentPage .. '/' .. totalPages .. ' 页  (' .. table.getn(currentResults) .. ' 件)')
+        pageText:SetText('第 ' .. currentPage .. '/' .. totalPages .. ' 页  (' .. table.getn(currentResults) .. ' 条)')
         nodeText:SetText('在线节点: ' .. TM:GetOnlineNodeCount())
 
         for i = 1, ITEMS_PER_PAGE do
@@ -1067,6 +845,7 @@ TM.modules['browse'] = function()
             listRows[i].listing = nil
         end
         browseContent.selectedListing = nil
+        whisperBtn.text:SetText('密语')
 
         if table.getn(currentResults) == 0 then
             browseEmptyText:Show()
@@ -1081,20 +860,35 @@ TM.modules['browse'] = function()
             if listing then
                 local row = listRows[i]
                 row.listing = listing
+
+                -- 类型标签
+                if listing._type == 'buy' then
+                    row.typeText:SetText('|cffff9900[求购]|r')
+                else
+                    row.typeText:SetText('|cff00ff00[出售]|r')
+                end
+
                 row.nameText:SetText(listing.itemName or 'Unknown')
                 row.countText:SetText('x' .. (listing.count or 1))
-                row.priceText:SetText(TM:FormatPrice(listing.priceGold, listing.priceSilver, listing.priceCopper))
 
-                -- 卖家名 + 信誉标签
-                local sellerStr = TM:GetClassColorHex(listing.seller or '') .. (listing.seller or '') .. '|r'
-                local repStr = TM.FormatReputation(listing.seller or '')
-                row.sellerText:SetText(sellerStr .. repStr)
+                -- 价格（出售用售价，求购用预算）
+                if listing._type == 'buy' then
+                    row.priceText:SetText(TM:FormatPrice(listing.maxGold, listing.maxSilver, listing.maxCopper))
+                else
+                    row.priceText:SetText(TM:FormatPrice(listing.priceGold, listing.priceSilver, listing.priceCopper))
+                end
+
+                -- 玩家名 + 信誉标签
+                local playerName = listing._player or ''
+                local playerStr = TM:GetClassColorHex(playerName) .. playerName .. '|r'
+                local repStr = TM.FormatReputation(playerName)
+                row.sellerText:SetText(playerStr .. repStr)
 
                 -- 物品图标（使用三级回退助手）
                 row.itemIcon:SetTexture(TM.ResolveTexture(listing.texture, listing.itemId))
 
                 -- 在线状态
-                if TM:IsSellerOnline(listing) then
+                if TM:IsPlayerOnline(listing.lastSeen) then
                     row.statusText:SetText('|cff00ff00在线|r')
                 else
                     row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(listing.lastSeen or listing.postedAt or 0) .. '|r')
@@ -1102,63 +896,6 @@ TM.modules['browse'] = function()
 
                 -- 备注
                 row.noteText:SetText(listing.note or '')
-
-                row:Show()
-            end
-        end
-    end)
-
-    -- ============================================================
-    -- 求购列表刷新回调
-    -- ============================================================
-    TM:RegisterUICallback('wants', function()
-        -- 从 config 恢复排序偏好
-        if TM_Data and TM_Data.config and TM_Data.config.wantSort then
-            wantSort = TM_Data.config.wantSort
-        end
-        wantResults = TM:SearchWants(wantQuery, wantSort)
-        local totalPages = math.max(1, math.ceil(table.getn(wantResults) / ITEMS_PER_PAGE))
-        if wantPage > totalPages then wantPage = totalPages end
-
-        wantPageText:SetText('第 ' .. wantPage .. '/' .. totalPages .. ' 页  (' .. table.getn(wantResults) .. ' 条)')
-
-        for i = 1, ITEMS_PER_PAGE do
-            wantRows[i]:Hide()
-            wantRows[i].want = nil
-        end
-        wantContent.selectedWant = nil
-
-        if table.getn(wantResults) == 0 then
-            wantEmptyText:Show()
-        else
-            wantEmptyText:Hide()
-        end
-
-        local startIdx = (wantPage - 1) * ITEMS_PER_PAGE + 1
-        for i = 1, ITEMS_PER_PAGE do
-            local idx = startIdx + i - 1
-            local want = wantResults[idx]
-            if want then
-                local row = wantRows[i]
-                row.want = want
-                row.nameText:SetText(want.itemName or '')
-                row.countText:SetText('x' .. (want.count or 1))
-                row.budgetText:SetText(TM:FormatPrice(want.maxGold, want.maxSilver, want.maxCopper))
-
-                -- 买家名 + 信誉（使用 FormatReputation 助手）
-                local buyerStr = TM:GetClassColorHex(want.buyer or '') .. (want.buyer or '') .. '|r'
-                local repStr = TM.FormatReputation(want.buyer or '')
-                row.buyerText:SetText(buyerStr .. repStr)
-
-                -- 在线状态
-                if TM:IsPlayerOnline(want.lastSeen) then
-                    row.statusText:SetText('|cff00ff00在线|r')
-                else
-                    row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(want.lastSeen or want.postedAt or 0) .. '|r')
-                end
-
-                -- 备注
-                row.noteText:SetText(want.note or '')
 
                 row:Show()
             end
@@ -1208,7 +945,7 @@ TM.modules['browse'] = function()
         TM:RefreshUI('tabs')
         if tabKey == 'browse' then TM:RefreshUI('browse')
         elseif tabKey == 'post' then TM:RefreshUI('post')
-        elseif tabKey == 'wants' then TM:RefreshUI('wants')
+        elseif tabKey == 'wants' then -- 求购Tab是纯发布表单，无需刷新
         elseif tabKey == 'mylistings' then TM:RefreshUI('mylistings')
         elseif tabKey == 'history' then TM:RefreshUI('history')
         end
@@ -1223,8 +960,6 @@ TM.modules['browse'] = function()
         TM:RefreshUI('tabs')
         if currentTab == 'browse' then
             TM:RefreshUI('browse')
-        elseif currentTab == 'wants' then
-            TM:RefreshUI('wants')
         end
     end)
 end
