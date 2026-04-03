@@ -34,8 +34,8 @@ TM.modules['browse'] = function()
     -- 主窗口
     -- ============================================================
     local main = CreateFrame('Frame', 'TM_MainFrame', UIParent)
-    main:SetWidth(720)
-    main:SetHeight(620)
+    main:SetWidth(800)
+    main:SetHeight(700)
     main:SetPoint('CENTER', UIParent, 'CENTER', 0, 50)
     main:SetBackdrop({
         bgFile = 'Interface\\Tooltips\\UI-Tooltip-Background',
@@ -94,8 +94,8 @@ TM.modules['browse'] = function()
     local tabKeys = {'browse', 'post', 'wants', 'mylistings', 'history'}
 
     for i = 1, 5 do
-        local tab = TM.ui.Button(main, tabNames[i], 120, 28)
-        tab:SetPoint('TOPLEFT', main, 'TOPLEFT', 8 + (i - 1) * 125, -30)
+        local tab = TM.ui.Button(main, tabNames[i], 140, 32)
+        tab:SetPoint('TOPLEFT', main, 'TOPLEFT', 12 + (i - 1) * 148, -32)
         tab.tabKey = tabKeys[i]
         tab:SetScript('OnClick', function()
             currentTab = this.tabKey
@@ -117,14 +117,14 @@ TM.modules['browse'] = function()
     -- 浏览内容容器
     -- ============================================================
     local browseContent = CreateFrame('Frame', 'TM_BrowseContent', main)
-    browseContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 8, -58)
-    browseContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -8, 8)
+    browseContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 12, -66)
+    browseContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -12, 8)
     TM.frames.browseContent = browseContent
 
     -- ============================================================
     -- 搜索栏
     -- ============================================================
-    local searchBox = TM.ui.Editbox(browseContent, 240, 26, 50)
+    local searchBox = TM.ui.Editbox(browseContent, 280, 30, 50)
     searchBox:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, 0)
     searchBox:SetScript('OnEnterPressed', function()
         currentQuery = this:GetText() or ''
@@ -133,7 +133,7 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    local searchBtn = TM.ui.Button(browseContent, '搜索', 55, 26)
+    local searchBtn = TM.ui.Button(browseContent, '搜索', 60, 30)
     searchBtn:SetPoint('LEFT', searchBox, 'RIGHT', 4, 0)
     searchBtn:SetScript('OnClick', function()
         currentQuery = searchBox:GetText() or ''
@@ -141,7 +141,7 @@ TM.modules['browse'] = function()
         TM:RefreshUI('browse')
     end)
 
-    local clearBtn = TM.ui.Button(browseContent, '清除', 50, 26)
+    local clearBtn = TM.ui.Button(browseContent, '清除', 55, 30)
     clearBtn:SetPoint('LEFT', searchBtn, 'RIGHT', 4, 0)
     clearBtn:SetScript('OnClick', function()
         searchBox:SetText('')
@@ -165,14 +165,14 @@ TM.modules['browse'] = function()
     -- 筛选栏（价格范围 + 卖家 + 在线）
     -- ============================================================
     local filterRow = CreateFrame('Frame', nil, browseContent)
-    filterRow:SetWidth(696)
-    filterRow:SetHeight(26)
-    filterRow:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -30)
+    filterRow:SetWidth(776)
+    filterRow:SetHeight(28)
+    filterRow:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -38)
 
-    local minLabel = TM.ui.Font(filterRow, 10, '最低价:', {0.7, 0.7, 0.7})
+    local minLabel = TM.ui.Font(filterRow, 11, '最低价:', {0.7, 0.7, 0.7})
     minLabel:SetPoint('LEFT', filterRow, 'LEFT', 0, 0)
 
-    filterMinPriceBox = TM.ui.Editbox(filterRow, 55, 22, 8)  -- 赋值前向声明的 local
+    filterMinPriceBox = TM.ui.Editbox(filterRow, 60, 24, 8)  -- 赋值前向声明的 local
     filterMinPriceBox:SetPoint('LEFT', minLabel, 'RIGHT', 4, 0)
     filterMinPriceBox:SetScript('OnEnterPressed', function()
         filterMinPrice = (tonumber(this:GetText()) or 0) * 10000
@@ -181,10 +181,10 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    local maxLabel = TM.ui.Font(filterRow, 10, '最高价:', {0.7, 0.7, 0.7})
+    local maxLabel = TM.ui.Font(filterRow, 11, '最高价:', {0.7, 0.7, 0.7})
     maxLabel:SetPoint('LEFT', filterMinPriceBox, 'RIGHT', 6, 0)
 
-    filterMaxPriceBox = TM.ui.Editbox(filterRow, 55, 22, 8)
+    filterMaxPriceBox = TM.ui.Editbox(filterRow, 60, 24, 8)
     filterMaxPriceBox:SetPoint('LEFT', maxLabel, 'RIGHT', 4, 0)
     filterMaxPriceBox:SetScript('OnEnterPressed', function()
         filterMaxPrice = (tonumber(this:GetText()) or 0) * 10000
@@ -193,10 +193,10 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    local sellerLabel = TM.ui.Font(filterRow, 10, '玩家:', {0.7, 0.7, 0.7})
+    local sellerLabel = TM.ui.Font(filterRow, 11, '玩家:', {0.7, 0.7, 0.7})
     sellerLabel:SetPoint('LEFT', filterMaxPriceBox, 'RIGHT', 6, 0)
 
-    filterSellerBox = TM.ui.Editbox(filterRow, 80, 22, 20)
+    filterSellerBox = TM.ui.Editbox(filterRow, 90, 24, 20)
     filterSellerBox:SetPoint('LEFT', sellerLabel, 'RIGHT', 4, 0)
     filterSellerBox:SetScript('OnEnterPressed', function()
         filterSeller = this:GetText() or ''
@@ -205,7 +205,7 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
-    onlineOnlyBtn = TM.ui.Button(filterRow, '只看在线', 75, 22)  -- 赋值前向声明的 local
+    onlineOnlyBtn = TM.ui.Button(filterRow, '只看在线', 80, 24)  -- 赋值前向声明的 local
     onlineOnlyBtn:SetPoint('LEFT', filterSellerBox, 'RIGHT', 8, 0)
     onlineOnlyBtn:SetScript('OnClick', function()
         filterOnlineOnly = not filterOnlineOnly
@@ -219,7 +219,7 @@ TM.modules['browse'] = function()
     end)
 
     -- 筛选应用按钮
-    local applyFilterBtn = TM.ui.Button(filterRow, '筛选', 50, 22)
+    local applyFilterBtn = TM.ui.Button(filterRow, '筛选', 55, 24)
     applyFilterBtn:SetPoint('LEFT', onlineOnlyBtn, 'RIGHT', 8, 0)
     applyFilterBtn:SetScript('OnClick', function()
         filterMinPrice = (tonumber(filterMinPriceBox:GetText()) or 0) * 10000
@@ -232,16 +232,16 @@ TM.modules['browse'] = function()
     -- ============================================================
     -- 排序按钮 + 类型筛选
     -- ============================================================
-    local sortLabel = TM.ui.Font(browseContent, 10, '排序:', {0.7, 0.7, 0.7})
-    sortLabel:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -58)
+    local sortLabel = TM.ui.Font(browseContent, 11, '排序:', {0.7, 0.7, 0.7})
+    sortLabel:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -72)
 
     local sortButtons = {}
     local sortNames = {'价格↑', '价格↓', '时间', '数量'}
     local sortKeys = {'price_asc', 'price_desc', 'time', 'count'}
 
     for i = 1, 4 do
-        local btn = TM.ui.Button(browseContent, sortNames[i], 65, 22)
-        btn:SetPoint('LEFT', sortLabel, 'RIGHT', 4 + (i - 1) * 69, 0)
+        local btn = TM.ui.Button(browseContent, sortNames[i], 70, 26)
+        btn:SetPoint('LEFT', sortLabel, 'RIGHT', 4 + (i - 1) * 74, 0)
         btn.sortKey = sortKeys[i]
         btn:SetScript('OnClick', function()
             currentSort = this.sortKey
@@ -253,7 +253,7 @@ TM.modules['browse'] = function()
     end
 
     -- 类型筛选按钮组
-    local typeLabel = TM.ui.Font(browseContent, 10, '类型:', {0.7, 0.7, 0.7})
+    local typeLabel = TM.ui.Font(browseContent, 11, '类型:', {0.7, 0.7, 0.7})
     typeLabel:SetPoint('LEFT', sortButtons[4], 'RIGHT', 16, 0)
 
     local typeFilterBtns = {}
@@ -271,8 +271,8 @@ TM.modules['browse'] = function()
     end
 
     for i = 1, 3 do
-        local btn = TM.ui.Button(browseContent, typeNames[i], 50, 22)
-        btn:SetPoint('LEFT', typeLabel, 'RIGHT', 4 + (i - 1) * 54, 0)
+        local btn = TM.ui.Button(browseContent, typeNames[i], 55, 26)
+        btn:SetPoint('LEFT', typeLabel, 'RIGHT', 4 + (i - 1) * 59, 0)
         btn.typeKey = typeKeys[i]
         btn:SetScript('OnClick', function()
             filterListingType = this.typeKey
@@ -288,52 +288,52 @@ TM.modules['browse'] = function()
     -- 商品列表表头
     -- ============================================================
     local headerRow = CreateFrame('Frame', nil, browseContent)
-    headerRow:SetWidth(696)
-    headerRow:SetHeight(18)
-    headerRow:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -82)
+    headerRow:SetWidth(776)
+    headerRow:SetHeight(22)
+    headerRow:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -104)
 
     local headerBg = headerRow:CreateTexture(nil, 'BACKGROUND')
     headerBg:SetTexture('Interface\\Buttons\\WHITE8X8')
     headerBg:SetAllPoints(headerRow)
     headerBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
 
-    local hdrIcon = TM.ui.Font(headerRow, 10, '', {0.6, 0.6, 0.6})
+    local hdrIcon = TM.ui.Font(headerRow, 11, '', {0.6, 0.6, 0.6})
     hdrIcon:SetPoint('LEFT', headerRow, 'LEFT', 2, 0)
-    hdrIcon:SetWidth(28)
+    hdrIcon:SetWidth(32)
 
-    local hdrType = TM.ui.Font(headerRow, 10, '类型', {0.6, 0.6, 0.6})
-    hdrType:SetPoint('LEFT', headerRow, 'LEFT', 32, 0)
-    hdrType:SetWidth(45)
+    local hdrType = TM.ui.Font(headerRow, 11, '类型', {0.6, 0.6, 0.6})
+    hdrType:SetPoint('LEFT', headerRow, 'LEFT', 36, 0)
+    hdrType:SetWidth(50)
 
-    local hdrName = TM.ui.Font(headerRow, 10, '物品名称', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrName:SetPoint('LEFT', headerRow, 'LEFT', 80, 0)
-    hdrName:SetWidth(140)
+    local hdrName = TM.ui.Font(headerRow, 11, '物品名称', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrName:SetPoint('LEFT', headerRow, 'LEFT', 90, 0)
+    hdrName:SetWidth(175)
 
-    local hdrCount = TM.ui.Font(headerRow, 10, '数量', {0.6, 0.6, 0.6})
-    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 224, 0)
-    hdrCount:SetWidth(35)
+    local hdrCount = TM.ui.Font(headerRow, 11, '数量', {0.6, 0.6, 0.6})
+    hdrCount:SetPoint('LEFT', headerRow, 'LEFT', 268, 0)
+    hdrCount:SetWidth(40)
 
-    local hdrPrice = TM.ui.Font(headerRow, 10, '价格', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 262, 0)
-    hdrPrice:SetWidth(95)
+    local hdrPrice = TM.ui.Font(headerRow, 11, '价格', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrPrice:SetPoint('LEFT', headerRow, 'LEFT', 312, 0)
+    hdrPrice:SetWidth(110)
 
-    local hdrSeller = TM.ui.Font(headerRow, 10, '玩家', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 360, 0)
-    hdrSeller:SetWidth(105)
+    local hdrSeller = TM.ui.Font(headerRow, 11, '玩家', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrSeller:SetPoint('LEFT', headerRow, 'LEFT', 426, 0)
+    hdrSeller:SetWidth(125)
 
-    local hdrStatus = TM.ui.Font(headerRow, 10, '状态', {0.6, 0.6, 0.6})
-    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 470, 0)
-    hdrStatus:SetWidth(50)
+    local hdrStatus = TM.ui.Font(headerRow, 11, '状态', {0.6, 0.6, 0.6})
+    hdrStatus:SetPoint('LEFT', headerRow, 'LEFT', 554, 0)
+    hdrStatus:SetWidth(55)
 
-    local hdrNote = TM.ui.Font(headerRow, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
-    hdrNote:SetPoint('LEFT', headerRow, 'LEFT', 524, 0)
-    hdrNote:SetWidth(140)
+    local hdrNote = TM.ui.Font(headerRow, 11, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    hdrNote:SetPoint('LEFT', headerRow, 'LEFT', 612, 0)
+    hdrNote:SetWidth(160)
 
     -- ============================================================
     -- 商品列表区域（带图标）
     -- ============================================================
-    local listScroll = TM.ui.Scrollframe(browseContent, 696, 400, 'TM_BrowseScroll')
-    listScroll:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -102)
+    local listScroll = TM.ui.Scrollframe(browseContent, 776, 430, 'TM_BrowseScroll')
+    listScroll:SetPoint('TOPLEFT', browseContent, 'TOPLEFT', 0, -128)
 
     -- 浏览空状态占位
     local browseEmptyText = TM.ui.Font(listScroll.content, 11, '暂无记录。尝试搜索其他关键词或清除筛选条件。', {0.5, 0.5, 0.5})
@@ -344,9 +344,9 @@ TM.modules['browse'] = function()
     local listRows = {}
     for i = 1, ITEMS_PER_PAGE do
         local row = CreateFrame('Button', 'TM_ListRow' .. i, listScroll.content)
-        row:SetWidth(686)
-        row:SetHeight(32)
-        row:SetPoint('TOPLEFT', listScroll.content, 'TOPLEFT', 0, -(i - 1) * 33)
+        row:SetWidth(766)
+        row:SetHeight(38)
+        row:SetPoint('TOPLEFT', listScroll.content, 'TOPLEFT', 0, -(i - 1) * 40)
 
         -- 背景（交替色）
         local bg = row:CreateTexture(nil, 'BACKGROUND')
@@ -367,67 +367,67 @@ TM.modules['browse'] = function()
 
         -- 物品图标
         local itemIcon = row:CreateTexture(nil, 'ARTWORK')
-        itemIcon:SetWidth(26)
-        itemIcon:SetHeight(26)
+        itemIcon:SetWidth(30)
+        itemIcon:SetHeight(30)
         itemIcon:SetPoint('LEFT', row, 'LEFT', 2, 0)
         itemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
         row.itemIcon = itemIcon
 
         -- 类型标签
         local typeText = row:CreateFontString(nil, 'OVERLAY')
-        typeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        typeText:SetPoint('LEFT', row, 'LEFT', 32, 0)
-        typeText:SetWidth(45)
+        typeText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        typeText:SetPoint('LEFT', row, 'LEFT', 36, 0)
+        typeText:SetWidth(50)
         typeText:SetJustifyH('CENTER')
         row.typeText = typeText
 
         -- 物品名称
         local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        nameText:SetPoint('LEFT', row, 'LEFT', 80, 0)
-        nameText:SetWidth(140)
+        nameText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
+        nameText:SetPoint('LEFT', row, 'LEFT', 90, 0)
+        nameText:SetWidth(175)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 1, 1)
         row.nameText = nameText
 
         -- 数量
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 224, 0)
-        countText:SetWidth(35)
+        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 268, 0)
+        countText:SetWidth(40)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         -- 价格
         local priceText = row:CreateFontString(nil, 'OVERLAY')
-        priceText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        priceText:SetPoint('LEFT', row, 'LEFT', 262, 0)
-        priceText:SetWidth(95)
+        priceText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        priceText:SetPoint('LEFT', row, 'LEFT', 312, 0)
+        priceText:SetWidth(110)
         priceText:SetJustifyH('LEFT')
         row.priceText = priceText
 
         -- 玩家（含信誉）
         local sellerText = row:CreateFontString(nil, 'OVERLAY')
-        sellerText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        sellerText:SetPoint('LEFT', row, 'LEFT', 360, 0)
-        sellerText:SetWidth(105)
+        sellerText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        sellerText:SetPoint('LEFT', row, 'LEFT', 426, 0)
+        sellerText:SetWidth(125)
         sellerText:SetJustifyH('LEFT')
         row.sellerText = sellerText
 
         -- 状态（在线/离线）
         local statusText = row:CreateFontString(nil, 'OVERLAY')
-        statusText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        statusText:SetPoint('LEFT', row, 'LEFT', 470, 0)
-        statusText:SetWidth(50)
+        statusText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        statusText:SetPoint('LEFT', row, 'LEFT', 554, 0)
+        statusText:SetWidth(55)
         statusText:SetJustifyH('CENTER')
         row.statusText = statusText
 
         -- 备注
         local noteText = row:CreateFontString(nil, 'OVERLAY')
-        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        noteText:SetPoint('LEFT', row, 'LEFT', 524, 0)
-        noteText:SetWidth(140)
+        noteText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 612, 0)
+        noteText:SetWidth(160)
         noteText:SetJustifyH('LEFT')
         noteText:SetTextColor(0.9, 0.9, 0.7)
         row.noteText = noteText
@@ -494,20 +494,20 @@ TM.modules['browse'] = function()
         listRows[i] = row
     end
 
-    listScroll.content:SetHeight(ITEMS_PER_PAGE * 33)
+    listScroll.content:SetHeight(ITEMS_PER_PAGE * 40)
 
     -- ============================================================
     -- 底部栏：分页 + 操作按钮
     -- ============================================================
     local bottomBar = CreateFrame('Frame', nil, browseContent)
-    bottomBar:SetWidth(696)
-    bottomBar:SetHeight(34)
+    bottomBar:SetWidth(776)
+    bottomBar:SetHeight(38)
     bottomBar:SetPoint('BOTTOMLEFT', browseContent, 'BOTTOMLEFT', 0, 0)
 
-    local pageText = TM.ui.Font(bottomBar, 10, '第 1/1 页', {0.7, 0.7, 0.7})
+    local pageText = TM.ui.Font(bottomBar, 11, '第 1/1 页', {0.7, 0.7, 0.7})
     pageText:SetPoint('LEFT', bottomBar, 'LEFT', 0, 0)
 
-    local prevBtn = TM.ui.Button(bottomBar, '<', 32, 26)
+    local prevBtn = TM.ui.Button(bottomBar, '<', 36, 30)
     prevBtn:SetPoint('LEFT', pageText, 'RIGHT', 6, 0)
     prevBtn:SetScript('OnClick', function()
         if currentPage > 1 then
@@ -516,7 +516,7 @@ TM.modules['browse'] = function()
         end
     end)
 
-    local nextBtn = TM.ui.Button(bottomBar, '>', 32, 26)
+    local nextBtn = TM.ui.Button(bottomBar, '>', 36, 30)
     nextBtn:SetPoint('LEFT', prevBtn, 'RIGHT', 3, 0)
     nextBtn:SetScript('OnClick', function()
         local totalPages = math.max(1, math.ceil(table.getn(currentResults) / ITEMS_PER_PAGE))
@@ -526,10 +526,10 @@ TM.modules['browse'] = function()
         end
     end)
 
-    local nodeText = TM.ui.Font(bottomBar, 9, '在线节点: 0', {0.5, 0.7, 0.5})
+    local nodeText = TM.ui.Font(bottomBar, 10, '在线节点: 0', {0.5, 0.7, 0.5})
     nodeText:SetPoint('LEFT', nextBtn, 'RIGHT', 10, 0)
 
-    whisperBtn = TM.ui.Button(bottomBar, '密语', 90, 26)
+    whisperBtn = TM.ui.Button(bottomBar, '密语', 100, 30)
     whisperBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', -70, 0)
     whisperBtn:SetScript('OnClick', function()
         local listing = browseContent.selectedListing
@@ -566,7 +566,7 @@ TM.modules['browse'] = function()
         end
     end)
 
-    local refreshBtn = TM.ui.Button(bottomBar, '刷新', 60, 26)
+    local refreshBtn = TM.ui.Button(bottomBar, '刷新', 65, 30)
     refreshBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', 0, 0)
     refreshBtn:SetScript('OnClick', function()
         TM:RefreshUI('browse')
@@ -584,8 +584,8 @@ TM.modules['browse'] = function()
     -- 求购内容容器（纯发布表单）
     -- ============================================================
     local wantContent = CreateFrame('Frame', 'TM_WantContent', main)
-    wantContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 8, -58)
-    wantContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -8, 8)
+    wantContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 12, -66)
+    wantContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -12, 8)
     wantContent:Hide()
     TM.frames.wantContent = wantContent
 
@@ -593,34 +593,24 @@ TM.modules['browse'] = function()
     local wantItemTexture = nil
 
     -- 标题
-    local wantTitle = TM.ui.Font(wantContent, 13, '输入你想要购买的物品:', {0.8, 0.8, 0.8})
+    local wantTitle = TM.ui.Font(wantContent, 13, '发布求购', {1, 0.82, 0})
     wantTitle:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, 0)
 
-    -- 物品预览框（和出售Tab风格一致）
-    local wantItemFrame = CreateFrame('Frame', nil, wantContent)
-    wantItemFrame:SetWidth(400)
-    wantItemFrame:SetHeight(52)
-    wantItemFrame:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -30)
-    wantItemFrame:SetBackdrop({
-        bgFile = 'Interface\\Buttons\\WHITE8X8',
-        edgeFile = 'Interface\\Tooltips\\UI-Tooltip-Border',
-        edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
-    })
-    wantItemFrame:SetBackdropColor(0.1, 0.1, 0.1, 0.8)
-    wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+    -- 物品名称行（图标 + 输入框，无额外容器）
+    local wantNameLabel = TM.ui.Font(wantContent, 12, '物品:', {0.7, 0.7, 0.7})
+    wantNameLabel:SetPoint('TOPLEFT', wantContent, 'TOPLEFT', 0, -30)
 
-    local wantItemIcon = wantItemFrame:CreateTexture(nil, 'ARTWORK')
-    wantItemIcon:SetWidth(40)
-    wantItemIcon:SetHeight(40)
-    wantItemIcon:SetPoint('LEFT', wantItemFrame, 'LEFT', 6, 0)
+    local wantItemIcon = wantContent:CreateTexture(nil, 'ARTWORK')
+    wantItemIcon:SetWidth(30)
+    wantItemIcon:SetHeight(30)
+    wantItemIcon:SetPoint('LEFT', wantNameLabel, 'RIGHT', 8, 0)
     wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
 
-    local wantNameBox = TM.ui.Editbox(wantItemFrame, 300, 30, 120)
+    local wantNameBox = TM.ui.Editbox(wantContent, 340, 30, 120)
     wantNameBox:SetPoint('LEFT', wantItemIcon, 'RIGHT', 8, 0)
 
-    local wantNameHint = TM.ui.Font(wantContent, 10, 'Shift+点击物品链接 或 直接输入物品名称', {0.5, 0.5, 0.5}, 'LEFT')
-    wantNameHint:SetPoint('TOPLEFT', wantItemFrame, 'BOTTOMLEFT', 0, -10)
+    local wantNameHint = TM.ui.Font(wantContent, 10, '点击背包物品 / 点击聊天链接 / 直接输入名称', {0.5, 0.5, 0.5}, 'LEFT')
+    wantNameHint:SetPoint('TOPLEFT', wantNameLabel, 'TOPLEFT', 0, -40)
 
     --- 解析输入框内容：检测物品链接或纯文本
     local function ParseWantInput()
@@ -635,12 +625,10 @@ TM.modules['browse'] = function()
                 wantItemTexture = texture
                 wantItemIcon:SetTexture(texture)
             end
-            wantItemFrame:SetBackdropBorderColor(0.3, 0.7, 1, 1)
         else
             wantItemId = 0
             wantItemTexture = nil
             wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
-            wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
         end
     end
 
@@ -655,9 +643,43 @@ TM.modules['browse'] = function()
         this:ClearFocus()
     end)
 
+    -- Hook 聊天物品链接点击：求购Tab可见时插入到求购输入框
+    local origSetItemRef = SetItemRef
+    SetItemRef = function(link, text, button)
+        if wantContent:IsVisible() and link then
+            local itemId = TM.match(link, 'item:(%d+)')
+            if itemId then
+                local linkText = text or ('|cffffffff|Hitem:' .. itemId .. ':0:0:0|h[item]|h|r')
+                wantNameBox:SetText(linkText)
+                wantNameBox:SetFocus()
+                ParseWantInput()
+                return
+            end
+        end
+        origSetItemRef(link, text, button)
+    end
+
+    -- Hook 背包物品点击：求购Tab可见时填入物品信息
+    if ContainerFrameItemButton_OnClick then
+        local origWantContainerClick = ContainerFrameItemButton_OnClick
+        ContainerFrameItemButton_OnClick = function(button, ignoreShift)
+            if wantContent:IsVisible() and not IsShiftKeyDown() and not IsControlKeyDown() then
+                local bag = this:GetParent():GetID()
+                local slot = this:GetID()
+                local link = GetContainerItemLink(bag, slot)
+                if link then
+                    wantNameBox:SetText(link)
+                    ParseWantInput()
+                end
+                return
+            end
+            origWantContainerClick(button, ignoreShift)
+        end
+    end
+
     -- 数量 + 预算
     local wfQtyLabel = TM.ui.Font(wantContent, 12, '数量:', {0.7, 0.7, 0.7})
-    wfQtyLabel:SetPoint('TOPLEFT', wantItemFrame, 'BOTTOMLEFT', 0, -48)
+    wfQtyLabel:SetPoint('TOPLEFT', wantNameLabel, 'TOPLEFT', 0, -76)
 
     local wfCountBox = TM.ui.Editbox(wantContent, 60, 30, 5)
     wfCountBox:SetPoint('LEFT', wfQtyLabel, 'RIGHT', 8, 0)
@@ -691,7 +713,7 @@ TM.modules['browse'] = function()
     local wfNoteLabel = TM.ui.Font(wantContent, 12, '备注:', {0.7, 0.7, 0.7})
     wfNoteLabel:SetPoint('TOPLEFT', wfBudgetLabel, 'TOPLEFT', 0, -50)
 
-    local wfNoteBox = TM.ui.Editbox(wantContent, 360, 30, TM.const.MAX_NOTE_LEN)
+    local wfNoteBox = TM.ui.Editbox(wantContent, 400, 30, TM.const.MAX_NOTE_LEN)
     wfNoteBox:SetPoint('LEFT', wfNoteLabel, 'RIGHT', 8, 0)
     wfNoteBox:SetText('')
 
@@ -748,7 +770,6 @@ TM.modules['browse'] = function()
         wantItemId = 0
         wantItemTexture = nil
         wantItemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
-        wantItemFrame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
         wfNoteBox:SetText('')
 
         TM:RefreshUI('browse')
@@ -764,18 +785,18 @@ TM.modules['browse'] = function()
     -- 历史内容面板
     -- ============================================================
     local historyContent = CreateFrame('Frame', 'TM_HistoryContent', main)
-    historyContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 8, -58)
-    historyContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -8, 8)
+    historyContent:SetPoint('TOPLEFT', main, 'TOPLEFT', 12, -66)
+    historyContent:SetPoint('BOTTOMRIGHT', main, 'BOTTOMRIGHT', -12, 8)
     historyContent:Hide()
     TM.frames.historyContent = historyContent
 
-    local historyScroll = TM.ui.Scrollframe(historyContent, 696, 520, 'TM_HistoryScroll')
+    local historyScroll = TM.ui.Scrollframe(historyContent, 776, 620, 'TM_HistoryScroll')
     historyScroll:SetPoint('TOPLEFT', historyContent, 'TOPLEFT', 0, 0)
 
     local historyText = historyScroll.content:CreateFontString(nil, 'OVERLAY')
-    historyText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+    historyText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
     historyText:SetPoint('TOPLEFT', historyScroll.content, 'TOPLEFT', 4, -4)
-    historyText:SetWidth(686)
+    historyText:SetWidth(766)
     historyText:SetJustifyH('LEFT')
     historyText:SetTextColor(0.9, 0.9, 0.9)
     TM.frames.historyText = historyText

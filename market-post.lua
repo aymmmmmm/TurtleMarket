@@ -23,8 +23,8 @@ TM.modules['post'] = function()
     -- 发布内容面板（嵌入主窗口）
     -- ============================================================
     local postContent = CreateFrame('Frame', 'TM_PostContent', TM.frames.main)
-    postContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 8, -58)
-    postContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -8, 8)
+    postContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 12, -66)
+    postContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -12, 8)
     postContent:Hide()
     TM.frames.postContent = postContent
 
@@ -44,7 +44,7 @@ TM.modules['post'] = function()
 
     -- 物品预览框
     local itemFrame = CreateFrame('Button', 'TM_ItemPreview', postContent)
-    itemFrame:SetWidth(400)
+    itemFrame:SetWidth(440)
     itemFrame:SetHeight(52)
     itemFrame:SetPoint('TOPLEFT', postContent, 'TOPLEFT', 0, -30)
     itemFrame:SetBackdrop({
@@ -179,7 +179,7 @@ TM.modules['post'] = function()
     local noteLabel = TM.ui.Font(postContent, 12, '备注:', {0.7, 0.7, 0.7})
     noteLabel:SetPoint('TOPLEFT', sellPriceLabel, 'TOPLEFT', 0, -50)
 
-    local noteBox = TM.ui.Editbox(postContent, 360, 30, TM.const.MAX_NOTE_LEN)
+    local noteBox = TM.ui.Editbox(postContent, 400, 30, TM.const.MAX_NOTE_LEN)
     noteBox:SetPoint('LEFT', noteLabel, 'RIGHT', 8, 0)
     noteBox:SetText('')
 

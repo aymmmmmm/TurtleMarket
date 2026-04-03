@@ -12,8 +12,8 @@ TM.modules['mylistings'] = function()
     -- 我的商品面板（嵌入主窗口）
     -- ============================================================
     local myContent = CreateFrame('Frame', 'TM_MyListingsContent', TM.frames.main)
-    myContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 8, -58)
-    myContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -8, 8)
+    myContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 12, -66)
+    myContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -12, 8)
     myContent:Hide()
     TM.frames.mylistingsContent = myContent
 
@@ -28,31 +28,31 @@ TM.modules['mylistings'] = function()
     -- ============================================================
     -- 我的出售区域
     -- ============================================================
-    local sellTitle = TM.ui.Font(myContent, 12, '|cffffd700我的挂单|r', {1, 0.82, 0})
+    local sellTitle = TM.ui.Font(myContent, 14, '|cffffd700我的挂单|r', {1, 0.82, 0})
     sellTitle:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, 0)
 
     -- 出售表头
     local sellHeader = CreateFrame('Frame', nil, myContent)
-    sellHeader:SetWidth(696)
-    sellHeader:SetHeight(16)
-    sellHeader:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, -18)
+    sellHeader:SetWidth(776)
+    sellHeader:SetHeight(20)
+    sellHeader:SetPoint('TOPLEFT', myContent, 'TOPLEFT', 0, -20)
     local sellHdrBg = sellHeader:CreateTexture(nil, 'BACKGROUND')
     sellHdrBg:SetTexture('Interface\\Buttons\\WHITE8X8')
     sellHdrBg:SetAllPoints(sellHeader)
     sellHdrBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
 
-    local shName = TM.ui.Font(sellHeader, 9, '物品', {0.6, 0.6, 0.6}, 'LEFT')
-    shName:SetPoint('LEFT', sellHeader, 'LEFT', 30, 0)
-    local shCount = TM.ui.Font(sellHeader, 9, '数量', {0.6, 0.6, 0.6})
-    shCount:SetPoint('LEFT', sellHeader, 'LEFT', 194, 0)
-    local shPrice = TM.ui.Font(sellHeader, 9, '价格', {0.6, 0.6, 0.6}, 'LEFT')
-    shPrice:SetPoint('LEFT', sellHeader, 'LEFT', 232, 0)
-    local shTime = TM.ui.Font(sellHeader, 9, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
-    shTime:SetPoint('LEFT', sellHeader, 'LEFT', 346, 0)
-    local shNote = TM.ui.Font(sellHeader, 9, '备注', {0.6, 0.6, 0.6}, 'LEFT')
-    shNote:SetPoint('LEFT', sellHeader, 'LEFT', 470, 0)
+    local shName = TM.ui.Font(sellHeader, 10, '物品', {0.6, 0.6, 0.6}, 'LEFT')
+    shName:SetPoint('LEFT', sellHeader, 'LEFT', 34, 0)
+    local shCount = TM.ui.Font(sellHeader, 10, '数量', {0.6, 0.6, 0.6})
+    shCount:SetPoint('LEFT', sellHeader, 'LEFT', 218, 0)
+    local shPrice = TM.ui.Font(sellHeader, 10, '价格', {0.6, 0.6, 0.6}, 'LEFT')
+    shPrice:SetPoint('LEFT', sellHeader, 'LEFT', 262, 0)
+    local shTime = TM.ui.Font(sellHeader, 10, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
+    shTime:SetPoint('LEFT', sellHeader, 'LEFT', 386, 0)
+    local shNote = TM.ui.Font(sellHeader, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    shNote:SetPoint('LEFT', sellHeader, 'LEFT', 520, 0)
 
-    local sellScroll = TM.ui.Scrollframe(myContent, 696, 230, 'TM_MySellScroll')
+    local sellScroll = TM.ui.Scrollframe(myContent, 776, 252, 'TM_MySellScroll')
     sellScroll:SetPoint('TOPLEFT', sellHeader, 'BOTTOMLEFT', 0, -2)
 
     -- 出售空状态占位
@@ -67,9 +67,9 @@ TM.modules['mylistings'] = function()
 
     for i = 1, MAX_SELL_ROWS do
         local row = CreateFrame('Button', 'TM_MySellRow' .. i, sellScroll.content)
-        row:SetWidth(686)
-        row:SetHeight(28)
-        row:SetPoint('TOPLEFT', sellScroll.content, 'TOPLEFT', 0, -(i - 1) * 29)
+        row:SetWidth(766)
+        row:SetHeight(34)
+        row:SetPoint('TOPLEFT', sellScroll.content, 'TOPLEFT', 0, -(i - 1) * 36)
 
         local bg = row:CreateTexture(nil, 'BACKGROUND')
         bg:SetTexture('Interface\\Buttons\\WHITE8X8')
@@ -84,47 +84,47 @@ TM.modules['mylistings'] = function()
 
         -- 物品图标
         local itemIcon = row:CreateTexture(nil, 'ARTWORK')
-        itemIcon:SetWidth(24)
-        itemIcon:SetHeight(24)
+        itemIcon:SetWidth(28)
+        itemIcon:SetHeight(28)
         itemIcon:SetPoint('LEFT', row, 'LEFT', 2, 0)
         itemIcon:SetTexture('Interface\\Icons\\INV_Misc_QuestionMark')
         row.itemIcon = itemIcon
 
         local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
-        nameText:SetPoint('LEFT', row, 'LEFT', 30, 0)
-        nameText:SetWidth(160)
+        nameText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
+        nameText:SetPoint('LEFT', row, 'LEFT', 34, 0)
+        nameText:SetWidth(180)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 1, 1)
         row.nameText = nameText
 
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 194, 0)
-        countText:SetWidth(35)
+        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 218, 0)
+        countText:SetWidth(40)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         local priceText = row:CreateFontString(nil, 'OVERLAY')
-        priceText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        priceText:SetPoint('LEFT', row, 'LEFT', 232, 0)
-        priceText:SetWidth(110)
+        priceText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        priceText:SetPoint('LEFT', row, 'LEFT', 262, 0)
+        priceText:SetWidth(120)
         priceText:SetJustifyH('LEFT')
         row.priceText = priceText
 
         local timeText = row:CreateFontString(nil, 'OVERLAY')
-        timeText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        timeText:SetPoint('LEFT', row, 'LEFT', 346, 0)
-        timeText:SetWidth(120)
+        timeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        timeText:SetPoint('LEFT', row, 'LEFT', 386, 0)
+        timeText:SetWidth(130)
         timeText:SetJustifyH('LEFT')
         timeText:SetTextColor(0.6, 0.6, 0.6)
         row.timeText = timeText
 
         local noteText = row:CreateFontString(nil, 'OVERLAY')
-        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        noteText:SetPoint('LEFT', row, 'LEFT', 470, 0)
-        noteText:SetWidth(214)
+        noteText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 520, 0)
+        noteText:SetWidth(250)
         noteText:SetJustifyH('LEFT')
         noteText:SetTextColor(0.9, 0.9, 0.7)
         row.noteText = noteText
@@ -161,7 +161,7 @@ TM.modules['mylistings'] = function()
 
         sellRows[i] = row
     end
-    sellScroll.content:SetHeight(MAX_SELL_ROWS * 29)
+    sellScroll.content:SetHeight(MAX_SELL_ROWS * 36)
 
     -- 确认弹窗定义：取消出售
     StaticPopupDialogs['TM_CONFIRM_CANCEL_SELL'] = {
@@ -224,8 +224,8 @@ TM.modules['mylistings'] = function()
     }
 
     -- 取消出售按钮
-    local cancelSellBtn = TM.ui.Button(myContent, '取消出售', 100, 28, false, {1, 0.3, 0.3})
-    cancelSellBtn:SetPoint('TOPLEFT', sellScroll, 'BOTTOMLEFT', 0, -8)
+    local cancelSellBtn = TM.ui.Button(myContent, '取消出售', 110, 32, false, {1, 0.3, 0.3})
+    cancelSellBtn:SetPoint('TOPLEFT', sellScroll, 'BOTTOMLEFT', 0, -10)
     cancelSellBtn:SetScript('OnClick', function()
         if not selectedSellId then
             DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择要取消的商品。|r')
@@ -236,8 +236,8 @@ TM.modules['mylistings'] = function()
     TM.ui.SetTooltip(cancelSellBtn, '取消选中的商品挂单')
 
     -- 重新发布过期商品按钮
-    local republishBtn = TM.ui.Button(myContent, '重新发布', 100, 28, false, {0.3, 1, 0.3})
-    republishBtn:SetPoint('LEFT', cancelSellBtn, 'RIGHT', 8, 0)
+    local republishBtn = TM.ui.Button(myContent, '重新发布', 110, 32, false, {0.3, 1, 0.3})
+    republishBtn:SetPoint('LEFT', cancelSellBtn, 'RIGHT', 10, 0)
     republishBtn:SetScript('OnClick', function()
         if not selectedSellId then
             DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择要重新发布的商品。|r')
@@ -289,39 +289,39 @@ TM.modules['mylistings'] = function()
     -- ============================================================
     local divider = myContent:CreateTexture(nil, 'ARTWORK')
     divider:SetTexture('Interface\\Buttons\\WHITE8X8')
-    divider:SetWidth(696)
+    divider:SetWidth(776)
     divider:SetHeight(2)
-    divider:SetPoint('TOPLEFT', cancelSellBtn, 'BOTTOMLEFT', 0, -12)
+    divider:SetPoint('TOPLEFT', cancelSellBtn, 'BOTTOMLEFT', 0, -14)
     divider:SetVertexColor(0.4, 0.4, 0.5, 0.7)
 
     -- ============================================================
     -- 我的求购区域
     -- ============================================================
-    local wantTitle = TM.ui.Font(myContent, 12, '|cffffff00我的求购|r', {1, 1, 0})
-    wantTitle:SetPoint('TOPLEFT', divider, 'BOTTOMLEFT', 0, -10)
+    local wantTitle = TM.ui.Font(myContent, 14, '|cffffff00我的求购|r', {1, 1, 0})
+    wantTitle:SetPoint('TOPLEFT', divider, 'BOTTOMLEFT', 0, -12)
 
     -- 求购表头
     local wantHeader = CreateFrame('Frame', nil, myContent)
-    wantHeader:SetWidth(696)
-    wantHeader:SetHeight(16)
+    wantHeader:SetWidth(776)
+    wantHeader:SetHeight(20)
     wantHeader:SetPoint('TOPLEFT', wantTitle, 'BOTTOMLEFT', 0, -2)
     local wantHdrBg = wantHeader:CreateTexture(nil, 'BACKGROUND')
     wantHdrBg:SetTexture('Interface\\Buttons\\WHITE8X8')
     wantHdrBg:SetAllPoints(wantHeader)
     wantHdrBg:SetVertexColor(0.15, 0.15, 0.2, 0.8)
 
-    local whName = TM.ui.Font(wantHeader, 9, '物品', {0.6, 0.6, 0.6}, 'LEFT')
+    local whName = TM.ui.Font(wantHeader, 10, '物品', {0.6, 0.6, 0.6}, 'LEFT')
     whName:SetPoint('LEFT', wantHeader, 'LEFT', 8, 0)
-    local whCount = TM.ui.Font(wantHeader, 9, '数量', {0.6, 0.6, 0.6})
-    whCount:SetPoint('LEFT', wantHeader, 'LEFT', 182, 0)
-    local whBudget = TM.ui.Font(wantHeader, 9, '预算', {0.6, 0.6, 0.6}, 'LEFT')
-    whBudget:SetPoint('LEFT', wantHeader, 'LEFT', 220, 0)
-    local whTime = TM.ui.Font(wantHeader, 9, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
-    whTime:SetPoint('LEFT', wantHeader, 'LEFT', 334, 0)
-    local whNote = TM.ui.Font(wantHeader, 9, '备注', {0.6, 0.6, 0.6}, 'LEFT')
-    whNote:SetPoint('LEFT', wantHeader, 'LEFT', 458, 0)
+    local whCount = TM.ui.Font(wantHeader, 10, '数量', {0.6, 0.6, 0.6})
+    whCount:SetPoint('LEFT', wantHeader, 'LEFT', 202, 0)
+    local whBudget = TM.ui.Font(wantHeader, 10, '预算', {0.6, 0.6, 0.6}, 'LEFT')
+    whBudget:SetPoint('LEFT', wantHeader, 'LEFT', 246, 0)
+    local whTime = TM.ui.Font(wantHeader, 10, '剩余时间', {0.6, 0.6, 0.6}, 'LEFT')
+    whTime:SetPoint('LEFT', wantHeader, 'LEFT', 370, 0)
+    local whNote = TM.ui.Font(wantHeader, 10, '备注', {0.6, 0.6, 0.6}, 'LEFT')
+    whNote:SetPoint('LEFT', wantHeader, 'LEFT', 504, 0)
 
-    local wantScroll = TM.ui.Scrollframe(myContent, 696, 180, 'TM_MyWantScroll')
+    local wantScroll = TM.ui.Scrollframe(myContent, 776, 190, 'TM_MyWantScroll')
     wantScroll:SetPoint('TOPLEFT', wantHeader, 'BOTTOMLEFT', 0, -2)
 
     -- 求购空状态占位
@@ -335,9 +335,9 @@ TM.modules['mylistings'] = function()
 
     for i = 1, MAX_WANT_ROWS do
         local row = CreateFrame('Button', 'TM_MyWantRow' .. i, wantScroll.content)
-        row:SetWidth(686)
-        row:SetHeight(28)
-        row:SetPoint('TOPLEFT', wantScroll.content, 'TOPLEFT', 0, -(i - 1) * 30)
+        row:SetWidth(766)
+        row:SetHeight(34)
+        row:SetPoint('TOPLEFT', wantScroll.content, 'TOPLEFT', 0, -(i - 1) * 36)
 
         local bg = row:CreateTexture(nil, 'BACKGROUND')
         bg:SetTexture('Interface\\Buttons\\WHITE8X8')
@@ -351,40 +351,40 @@ TM.modules['mylistings'] = function()
         hl:SetAlpha(0.15)
 
         local nameText = row:CreateFontString(nil, 'OVERLAY')
-        nameText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        nameText:SetFont(TM.FONT_PATH, 12, 'OUTLINE')
         nameText:SetPoint('LEFT', row, 'LEFT', 8, 0)
-        nameText:SetWidth(170)
+        nameText:SetWidth(190)
         nameText:SetJustifyH('LEFT')
         nameText:SetTextColor(1, 0.82, 0)
         row.nameText = nameText
 
         local countText = row:CreateFontString(nil, 'OVERLAY')
-        countText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        countText:SetPoint('LEFT', row, 'LEFT', 182, 0)
-        countText:SetWidth(35)
+        countText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        countText:SetPoint('LEFT', row, 'LEFT', 202, 0)
+        countText:SetWidth(40)
         countText:SetJustifyH('CENTER')
         countText:SetTextColor(0.8, 0.8, 0.8)
         row.countText = countText
 
         local budgetText = row:CreateFontString(nil, 'OVERLAY')
-        budgetText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
-        budgetText:SetPoint('LEFT', row, 'LEFT', 220, 0)
-        budgetText:SetWidth(110)
+        budgetText:SetFont(TM.FONT_PATH, 11, 'OUTLINE')
+        budgetText:SetPoint('LEFT', row, 'LEFT', 246, 0)
+        budgetText:SetWidth(120)
         budgetText:SetJustifyH('LEFT')
         row.budgetText = budgetText
 
         local timeText = row:CreateFontString(nil, 'OVERLAY')
-        timeText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        timeText:SetPoint('LEFT', row, 'LEFT', 334, 0)
-        timeText:SetWidth(120)
+        timeText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        timeText:SetPoint('LEFT', row, 'LEFT', 370, 0)
+        timeText:SetWidth(130)
         timeText:SetJustifyH('LEFT')
         timeText:SetTextColor(0.6, 0.6, 0.6)
         row.timeText = timeText
 
         local noteText = row:CreateFontString(nil, 'OVERLAY')
-        noteText:SetFont(TM.FONT_PATH, 9, 'OUTLINE')
-        noteText:SetPoint('LEFT', row, 'LEFT', 458, 0)
-        noteText:SetWidth(226)
+        noteText:SetFont(TM.FONT_PATH, 10, 'OUTLINE')
+        noteText:SetPoint('LEFT', row, 'LEFT', 504, 0)
+        noteText:SetWidth(266)
         noteText:SetJustifyH('LEFT')
         noteText:SetTextColor(0.9, 0.9, 0.7)
         row.noteText = noteText
@@ -419,11 +419,11 @@ TM.modules['mylistings'] = function()
 
         wantRows[i] = row
     end
-    wantScroll.content:SetHeight(MAX_WANT_ROWS * 30)
+    wantScroll.content:SetHeight(MAX_WANT_ROWS * 36)
 
     -- 取消求购按钮
-    local cancelWantBtn = TM.ui.Button(myContent, '取消求购', 100, 28, false, {1, 0.5, 0.2})
-    cancelWantBtn:SetPoint('TOPLEFT', wantScroll, 'BOTTOMLEFT', 0, -8)
+    local cancelWantBtn = TM.ui.Button(myContent, '取消求购', 110, 32, false, {1, 0.5, 0.2})
+    cancelWantBtn:SetPoint('TOPLEFT', wantScroll, 'BOTTOMLEFT', 0, -10)
     cancelWantBtn:SetScript('OnClick', function()
         if not selectedWantId then
             DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 请先选择要取消的求购。|r')
@@ -434,8 +434,8 @@ TM.modules['mylistings'] = function()
     TM.ui.SetTooltip(cancelWantBtn, '取消选中的求购')
 
     -- 刷新按钮
-    local refreshMyBtn = TM.ui.Button(myContent, '刷新', 70, 28)
-    refreshMyBtn:SetPoint('LEFT', cancelWantBtn, 'RIGHT', 8, 0)
+    local refreshMyBtn = TM.ui.Button(myContent, '刷新', 80, 32)
+    refreshMyBtn:SetPoint('LEFT', cancelWantBtn, 'RIGHT', 10, 0)
     refreshMyBtn:SetScript('OnClick', function()
         TM:RefreshUI('mylistings')
     end)
@@ -489,7 +489,7 @@ TM.modules['mylistings'] = function()
             row:Show()
         end
 
-        sellScroll.content:SetHeight(math.max(230, table.getn(sellItems) * 29))
+        sellScroll.content:SetHeight(math.max(252, table.getn(sellItems) * 36))
         sellScroll.updateScrollBar()
 
         -- === 刷新求购列表 ===
@@ -533,7 +533,7 @@ TM.modules['mylistings'] = function()
             row:Show()
         end
 
-        wantScroll.content:SetHeight(math.max(180, table.getn(wantItems) * 27))
+        wantScroll.content:SetHeight(math.max(190, table.getn(wantItems) * 36))
         wantScroll.updateScrollBar()
     end)
 

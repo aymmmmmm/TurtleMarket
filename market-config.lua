@@ -12,8 +12,8 @@ TM.modules['config'] = function()
     -- 配置面板（嵌入主窗口）
     -- ============================================================
     local configContent = CreateFrame('Frame', 'TM_ConfigContent', TM.frames.main)
-    configContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 8, -58)
-    configContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -8, 8)
+    configContent:SetPoint('TOPLEFT', TM.frames.main, 'TOPLEFT', 12, -66)
+    configContent:SetPoint('BOTTOMRIGHT', TM.frames.main, 'BOTTOMRIGHT', -12, 8)
     configContent:Hide()
     TM.frames.configContent = configContent
 
@@ -26,10 +26,10 @@ TM.modules['config'] = function()
     end)
 
     -- 标题
-    local cfgTitle = TM.ui.Font(configContent, 12, '|cffffd700设置|r', {1, 1, 1})
+    local cfgTitle = TM.ui.Font(configContent, 14, '|cffffd700设置|r', {1, 1, 1})
     cfgTitle:SetPoint('TOPLEFT', configContent, 'TOPLEFT', 0, 0)
 
-    local yOffset = -24
+    local yOffset = -28
 
     -- ============================================================
     -- 辅助函数：创建配置行
@@ -37,9 +37,9 @@ TM.modules['config'] = function()
 
     --- 创建下拉选择行
     local function CreateDropdown(parent, label, options, currentValue, onChange, y)
-        local lbl = TM.ui.Font(parent, 11, label, {0.8, 0.8, 0.8}, 'LEFT')
+        local lbl = TM.ui.Font(parent, 12, label, {0.8, 0.8, 0.8}, 'LEFT')
         lbl:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, y)
-        lbl:SetWidth(150)
+        lbl:SetWidth(170)
 
         -- 用按钮模拟下拉菜单（循环切换）
         local current = 1
@@ -50,7 +50,7 @@ TM.modules['config'] = function()
             end
         end
 
-        local btn = TM.ui.Button(parent, options[current].label, 180, 26)
+        local btn = TM.ui.Button(parent, options[current].label, 200, 30)
         btn:SetPoint('LEFT', lbl, 'RIGHT', 8, 0)
         btn.options = options
         btn.current = current
@@ -80,14 +80,14 @@ TM.modules['config'] = function()
 
     --- 创建复选框行（用按钮模拟）
     local function CreateCheckbox(parent, label, currentValue, onChange, y)
-        local lbl = TM.ui.Font(parent, 11, label, {0.8, 0.8, 0.8}, 'LEFT')
+        local lbl = TM.ui.Font(parent, 12, label, {0.8, 0.8, 0.8}, 'LEFT')
         lbl:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, y)
-        lbl:SetWidth(150)
+        lbl:SetWidth(170)
 
         local state = currentValue
         local stateText = state and '|cff00ff00开启|r' or '|cffff6666关闭|r'
 
-        local btn = TM.ui.Button(parent, stateText, 90, 26)
+        local btn = TM.ui.Button(parent, stateText, 100, 30)
         btn:SetPoint('LEFT', lbl, 'RIGHT', 8, 0)
         btn.state = state
 
@@ -106,13 +106,13 @@ TM.modules['config'] = function()
 
     --- 创建滑块行
     local function CreateSlider(parent, label, minVal, maxVal, step, currentValue, onChange, y)
-        local lbl = TM.ui.Font(parent, 11, label, {0.8, 0.8, 0.8}, 'LEFT')
+        local lbl = TM.ui.Font(parent, 12, label, {0.8, 0.8, 0.8}, 'LEFT')
         lbl:SetPoint('TOPLEFT', parent, 'TOPLEFT', 0, y)
-        lbl:SetWidth(150)
+        lbl:SetWidth(170)
 
         local slider = CreateFrame('Slider', nil, parent)
-        slider:SetWidth(180)
-        slider:SetHeight(16)
+        slider:SetWidth(200)
+        slider:SetHeight(18)
         slider:SetPoint('LEFT', lbl, 'RIGHT', 8, 0)
         slider:SetOrientation('HORIZONTAL')
         slider:SetMinMaxValues(minVal, maxVal)
@@ -172,7 +172,7 @@ TM.modules['config'] = function()
         TM_Data.config.defaultExpireHours = val
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 2. 最大缓存数
     CreateSlider(configContent, '最大缓存数:', 100, 2000, 100, TM_Data.config.maxListings,
@@ -180,7 +180,7 @@ TM.modules['config'] = function()
         TM_Data.config.maxListings = val
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 3. 心跳间隔
     CreateDropdown(configContent, '心跳间隔:', {
@@ -193,14 +193,14 @@ TM.modules['config'] = function()
         if TM.RestartHeartbeat then TM:RestartHeartbeat() end
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 4. 交易后自动评价
     CreateCheckbox(configContent, '交易后弹出评价:', TM_Data.config.autoRate, function(val)
         TM_Data.config.autoRate = val
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 5. 密语格式
     CreateDropdown(configContent, '密语格式:', {
@@ -210,14 +210,14 @@ TM.modules['config'] = function()
         TM_Data.config.whisperFormat = val
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 6. 声音提示
     CreateCheckbox(configContent, '收到密语音效:', TM_Data.config.soundAlert, function(val)
         TM_Data.config.soundAlert = val
     end, yOffset)
 
-    yOffset = yOffset - 36
+    yOffset = yOffset - 44
 
     -- 7. 插件开关
     CreateCheckbox(configContent, '启用龟市:', TM_Data.config.enabled, function(val)
@@ -229,10 +229,10 @@ TM.modules['config'] = function()
         end
     end, yOffset)
 
-    yOffset = yOffset - 40
+    yOffset = yOffset - 48
 
     -- 说明文字
-    local helpText = TM.ui.Font(configContent, 10,
+    local helpText = TM.ui.Font(configContent, 11,
         '提示: 左键/右键切换选项。设置会自动保存到角色数据中。\n重载界面 (/reload) 后部分设置生效。',
         {0.5, 0.5, 0.5}, 'LEFT')
     helpText:SetPoint('TOPLEFT', configContent, 'TOPLEFT', 0, yOffset)
