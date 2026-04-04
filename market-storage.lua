@@ -154,57 +154,6 @@ TM.modules['storage'] = function()
     end
 
     -- ============================================================
-    -- 信誉系统 CRUD
-    -- ============================================================
-
-    --- 更新玩家信誉评分
-    -- @param playerName string 玩家名
-    -- @param rating string 'positive'/'negative'/'neutral'
-    function TM:UpdateReputation(playerName, rating)
-        if not playerName then return end
-        -- 不能给自己评价
-        if playerName == TM.playerName then return end
-        -- 每对玩家每日限评 1 次（持久化到 SavedVariables）
-        TM_Data.ratingCooldowns = TM_Data.ratingCooldowns or {}
-        local cdKey = TM.playerName .. ':' .. playerName
-        local lastRated = TM_Data.ratingCooldowns[cdKey] or 0
-        if time() - lastRated < 86400 then
-            DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] 24小时内已对该玩家评价过。|r')
-            return
-        end
-        TM_Data.ratingCooldowns[cdKey] = time()
-
-        local rep = TM_Data.reputation[playerName]
-        if not rep or type(rep) ~= 'table' then
-            rep = { trades = 0, positive = 0, negative = 0, neutral = 0, lastTrade = 0 }
-        end
-        rep.trades = (rep.trades or 0) + 1
-        rep.lastTrade = time()
-        if rating == 'positive' then
-            rep.positive = (rep.positive or 0) + 1
-        elseif rating == 'negative' then
-            rep.negative = (rep.negative or 0) + 1
-        else
-            rep.neutral = (rep.neutral or 0) + 1
-        end
-        TM_Data.reputation[playerName] = rep
-    end
-
-    --- 获取玩家信誉信息
-    -- @param playerName string 玩家名
-    -- @return table 信誉数据
-    function TM:GetReputationInfo(playerName)
-        local rep = TM_Data.reputation[playerName]
-        if not rep then
-            return { trades = 0, positive = 0, negative = 0, neutral = 0, lastTrade = 0 }
-        end
-        if type(rep) == 'number' then
-            return { trades = rep, positive = rep, negative = 0, neutral = 0, lastTrade = 0 }
-        end
-        return rep
-    end
-
-    -- ============================================================
     -- 交易历史
     -- ============================================================
 
@@ -281,20 +230,6 @@ TM.modules['storage'] = function()
             end
         end
 
-        -- === 清理信誉记录（LRU，按 lastTrade 淘汰最旧的） ===
-        local maxRep = TM.const.MAX_REPUTATION or 500
-        local repEntries = {}
-        for name, rep in pairs(TM_Data.reputation) do
-            table.insert(repEntries, { name = name, lastTrade = rep.lastTrade or 0 })
-        end
-        if table.getn(repEntries) > maxRep then
-            table.sort(repEntries, function(a, b) return a.lastTrade < b.lastTrade end)
-            local toRemove = table.getn(repEntries) - maxRep
-            for i = 1, toRemove do
-                TM_Data.reputation[repEntries[i].name] = nil
-            end
-        end
-
         -- === 清理玩家缓存（淘汰不活跃的） ===
         local maxCache = TM.const.MAX_PLAYER_CACHE or 1000
         local cacheCount = 0
@@ -308,19 +243,9 @@ TM.modules['storage'] = function()
             for _, want in pairs(TM_Data.wants) do
                 if want.buyer then active[want.buyer] = true end
             end
-            for name in pairs(TM_Data.reputation) do active[name] = true end
             for name in pairs(TM_PlayerCache.players) do
                 if not active[name] then
                     TM_PlayerCache.players[name] = nil
-                end
-            end
-        end
-
-        -- === 清理过期评分冷却（>24h 的条目已无意义） ===
-        if TM_Data.ratingCooldowns then
-            for key, ts in pairs(TM_Data.ratingCooldowns) do
-                if now - ts > 86400 then
-                    TM_Data.ratingCooldowns[key] = nil
                 end
             end
         end

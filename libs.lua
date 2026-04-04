@@ -29,10 +29,12 @@ TM.const = {
     ITEMS_PER_PAGE = 10,
     HISTORY_MAX = 100,
     ONLINE_TIMEOUT = 600,
-    AUTO_RATE_COUNTDOWN = 10,
-    MAX_REPUTATION = 500,
     MAX_PLAYER_CACHE = 1000,
     MAX_NOTE_LEN = 100,
+    SYNC_RESPONSE_COOLDOWN = 300,
+    SYNC_RESPONSE_CHANCE = 0.4,
+    SYNC_DELAY_MIN = 3,
+    SYNC_DELAY_MAX = 20,
 }
 
 -- 字体路径（延迟检测，先设默认值）
@@ -442,51 +444,6 @@ function TM.ResolveTexture(texture, itemId)
     return 'Interface\\Icons\\INV_Misc_QuestionMark'
 end
 
--- ============================================================
--- 信誉等级计算工具
--- ============================================================
-
---- 计算玩家信誉等级
--- @param playerName string 玩家名
--- @return string 等级标签, table 颜色{r,g,b}, string 等级键
-function TM.GetReputationLevel(playerName)
-    if not TM_Data or not TM_Data.reputation then
-        return '新手', {0.6, 0.6, 0.6}, 'newcomer'
-    end
-    local rep = TM_Data.reputation[playerName]
-    if not rep then
-        return '新手', {0.6, 0.6, 0.6}, 'newcomer'
-    end
-    -- 兼容旧格式（纯数字 → 视为交易次数）
-    if type(rep) == 'number' then
-        if rep >= 30 then
-            return '元老', {1, 0.84, 0}, 'veteran'
-        elseif rep >= 10 then
-            return '信赖', {0.4, 0.6, 1}, 'trusted'
-        elseif rep >= 3 then
-            return '可靠', {0.2, 0.8, 0.2}, 'reliable'
-        else
-            return '新手', {0.6, 0.6, 0.6}, 'newcomer'
-        end
-    end
-    -- 新格式：{trades, positive, negative, neutral, lastTrade}
-    local trades = rep.trades or 0
-    if trades < 3 then
-        return '新手', {0.6, 0.6, 0.6}, 'newcomer'
-    end
-    local total = (rep.positive or 0) + (rep.negative or 0) + (rep.neutral or 0)
-    if total == 0 then total = 1 end
-    local positiveRate = (rep.positive or 0) / total
-    if trades > 30 and positiveRate >= 0.95 then
-        return '元老', {1, 0.84, 0}, 'veteran'
-    elseif trades > 10 and positiveRate >= 0.9 then
-        return '信赖', {0.4, 0.6, 1}, 'trusted'
-    elseif trades >= 3 and positiveRate >= 0.8 then
-        return '可靠', {0.2, 0.8, 0.2}, 'reliable'
-    else
-        return '新手', {0.6, 0.6, 0.6}, 'newcomer'
-    end
-end
 
 --- 按钮成功闪烁反馈（短暂变色 + 文字变化，2秒后恢复）
 -- @param btn button 按钮框体（需有 .text FontString）
@@ -528,19 +485,3 @@ function TM.ui.SetTooltip(btn, tipText)
     end)
 end
 
---- 格式化信誉显示文本（带颜色的等级标签 + 交易数）
--- @param playerName string 玩家名
--- @return string 带颜色的信誉文本
-function TM.FormatReputation(playerName)
-    local label, color = TM.GetReputationLevel(playerName)
-    local rep = TM_Data and TM_Data.reputation and TM_Data.reputation[playerName]
-    local trades = 0
-    if type(rep) == 'number' then
-        trades = rep
-    elseif type(rep) == 'table' then
-        trades = rep.trades or 0
-    end
-    return string.format('|cff%02x%02x%02x[%s]|r(%d)',
-        color[1] * 255, color[2] * 255, color[3] * 255,
-        label, trades)
-end

@@ -86,22 +86,34 @@ TM.modules['sync'] = function()
     -- 注册同步消息处理器
     -- ============================================================
 
-    -- 处理同步请求 #S（回复 listings 同步 + 广播自己的 wants）
+    -- 处理同步请求 #S（冷却+概率+延迟控制，避免同步风暴）
+    local lastSyncResponse = 0
+
     TM:RegisterHandler('#S', function(payload, sender)
         if sender == TM.playerName then return end
-        local remoteDigest = payload or ''
-        local localDigest = TM:ComputeDigest()
 
-        if remoteDigest ~= localDigest then
-            local delay = 1 + math.random(0, 4)
-            TM.timers.delay(delay, function()
-                TM:SendSyncData(remoteDigest)
-            end)
-        end
+        local now = time()
+        local cooldown = TM.const.SYNC_RESPONSE_COOLDOWN or 300
 
-        -- 同时广播自己的 myWants，让新加入节点也能获取求购信息
-        local wantDelay = 2 + math.random(0, 4)
-        TM.timers.delay(wantDelay, function()
+        -- 冷却检查：5分钟内已响应过，跳过
+        if now - lastSyncResponse < cooldown then return end
+
+        -- 概率检查：只有40%的玩家响应，避免全员涌入
+        if math.random() > (TM.const.SYNC_RESPONSE_CHANCE or 0.4) then return end
+
+        lastSyncResponse = now
+
+        -- 加大随机延迟：3-20秒，充分打散
+        local delayMin = TM.const.SYNC_DELAY_MIN or 3
+        local delayMax = TM.const.SYNC_DELAY_MAX or 20
+        local delay = delayMin + math.random(0, delayMax - delayMin)
+
+        TM.timers.delay(delay, function()
+            TM:SendSyncData()
+        end)
+
+        -- wants 同步延迟在 listings 之后
+        TM.timers.delay(delay + 2 + math.random(0, 5), function()
             for id, want in pairs(TM_Data.myWants) do
                 if want.expiresAt and want.expiresAt > time() then
                     local data = {

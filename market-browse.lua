@@ -468,17 +468,12 @@ TM.modules['browse'] = function()
                 GameTooltip:AddLine('需要数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
                 GameTooltip:AddLine('预算上限: ' .. TM:FormatPrice(item.maxGold, item.maxSilver, item.maxCopper), 1, 0.82, 0)
                 GameTooltip:AddLine('买家: ' .. (item.buyer or ''), 0.5, 0.8, 1)
-                local repLabel, repColor = TM.GetReputationLevel(item.buyer or '')
-                GameTooltip:AddLine('信誉: ' .. repLabel, repColor[1], repColor[2], repColor[3])
             else
                 TM:ShowItemTooltip(item.itemId, item.itemName, {1, 1, 1})
                 GameTooltip:AddLine(' ')
                 GameTooltip:AddLine('数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
                 GameTooltip:AddLine('价格: ' .. TM:FormatPrice(item.priceGold, item.priceSilver, item.priceCopper), 1, 0.82, 0)
                 GameTooltip:AddLine('卖家: ' .. (item.seller or ''), 0.5, 0.8, 1)
-                local repInfo = TM:GetReputationInfo(item.seller or '')
-                local repLabel, repColor = TM.GetReputationLevel(item.seller or '')
-                GameTooltip:AddLine('信誉: ' .. repLabel .. ' (' .. repInfo.trades .. '次交易)', repColor[1], repColor[2], repColor[3])
             end
             if item.note and item.note ~= '' then
                 GameTooltip:AddLine('备注: ' .. item.note, 0.9, 0.9, 0.7)
@@ -899,11 +894,9 @@ TM.modules['browse'] = function()
                     row.priceText:SetText(TM:FormatPrice(listing.priceGold, listing.priceSilver, listing.priceCopper))
                 end
 
-                -- 玩家名 + 信誉标签
+                -- 玩家名
                 local playerName = listing._player or ''
-                local playerStr = TM:GetClassColorHex(playerName) .. playerName .. '|r'
-                local repStr = TM.FormatReputation(playerName)
-                row.sellerText:SetText(playerStr .. repStr)
+                row.sellerText:SetText(TM:GetClassColorHex(playerName) .. playerName .. '|r')
 
                 -- 物品图标（使用三级回退助手）
                 row.itemIcon:SetTexture(TM.ResolveTexture(listing.texture, listing.itemId))

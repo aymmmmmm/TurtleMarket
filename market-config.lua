@@ -195,14 +195,7 @@ TM.modules['config'] = function()
 
     yOffset = yOffset - 44
 
-    -- 4. 交易后自动评价
-    CreateCheckbox(configContent, '交易后弹出评价:', TM_Data.config.autoRate, function(val)
-        TM_Data.config.autoRate = val
-    end, yOffset)
-
-    yOffset = yOffset - 44
-
-    -- 5. 密语格式
+    -- 4. 密语格式
     CreateDropdown(configContent, '密语格式:', {
         { label = '中文', value = 'cn' },
         { label = '英文 (English)', value = 'en' },

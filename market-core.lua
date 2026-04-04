@@ -182,27 +182,10 @@ initFrame:SetScript('OnEvent', function()
     if not TM_Data.config.defaultExpireHours then TM_Data.config.defaultExpireHours = 48 end
     if not TM_Data.config.maxListings then TM_Data.config.maxListings = 500 end
     if not TM_Data.config.heartbeatInterval then TM_Data.config.heartbeatInterval = 300 end
-    if TM_Data.config.autoRate == nil then TM_Data.config.autoRate = true end
     if not TM_Data.config.whisperFormat then TM_Data.config.whisperFormat = 'cn' end
     if TM_Data.config.soundAlert == nil then TM_Data.config.soundAlert = true end
     if not TM_Data.config.browseSort then TM_Data.config.browseSort = 'time' end
     if not TM_Data.config.wantSort then TM_Data.config.wantSort = 'time' end
-
-    TM_Data.reputation = TM_Data.reputation or {}
-    TM_Data.ratingCooldowns = TM_Data.ratingCooldowns or {}
-
-    -- 信誉数据迁移：旧格式（纯数字）→ 新格式（table）
-    for name, rep in pairs(TM_Data.reputation) do
-        if type(rep) == 'number' then
-            TM_Data.reputation[name] = {
-                trades = rep,
-                positive = rep,
-                negative = 0,
-                neutral = 0,
-                lastTrade = 0,
-            }
-        end
-    end
 
     -- ============================================================
     -- 事件回调注册表（子模块注册自己的处理函数）
@@ -302,6 +285,14 @@ initFrame:SetScript('OnEvent', function()
 
     --- 频道就绪回调
     function TM:OnChannelReady()
+        -- 从所有聊天窗口移除频道，防止第三方插件（如 ChatMOD）捕获协议消息
+        for i = 1, NUM_CHAT_WINDOWS or 7 do
+            local cf = getglobal('ChatFrame' .. i)
+            if cf then
+                ChatFrame_RemoveChannel(cf, self.CHANNEL_NAME)
+            end
+        end
+
         if self.onReady then
             self.onReady()
         end
