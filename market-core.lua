@@ -14,33 +14,49 @@ if not TM._libsLoaded then
     end
 end
 
--- 隐藏 TurtleMarket 频道：在聊天事件层面拦截
--- 先做一次早期 hook（覆盖比 TM 更早加载的插件）
-local TM_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
-ChatFrame_OnEvent = function(event)
-    if (event == 'CHAT_MSG_CHANNEL' or event == 'CHAT_MSG_CHANNEL_NOTICE') then
+-- ============================================================
+-- 隐藏 TurtleMarket 频道：多层防御
+-- ============================================================
+
+-- TM 频道消息过滤函数（共用）
+local function TM_IsTurtleMarketEvent(evt)
+    if (evt == 'CHAT_MSG_CHANNEL' or evt == 'CHAT_MSG_CHANNEL_NOTICE') then
         if arg9 and string.find(arg9, 'TurtleMarket') then
-            return false
+            return true
         end
     end
+    return false
+end
+
+-- 第一层：早期 hook（覆盖比 TM 更早加载的插件）
+local TM_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
+ChatFrame_OnEvent = function(event)
+    if TM_IsTurtleMarketEvent(event) then return end
     TM_orig_ChatFrame_OnEvent(event)
 end
 
--- 所有插件加载完成后再 hook 一次，确保 TM 的拦截在最外层
--- （ChatMOD 等插件在 OnLoad 中 hook，晚于文件加载，会包在上面的 hook 外面）
+-- 第二层：PLAYER_ENTERING_WORLD 后重新 hook，成为最外层
+-- 同时检测 Turtle WoW 的 ChatFrame_MessageEventHandler（部分客户端用它替代 ChatFrame_OnEvent）
 local TM_lateHookFrame = CreateFrame('Frame')
-TM_lateHookFrame:RegisterEvent('PLAYER_LOGIN')
+TM_lateHookFrame:RegisterEvent('PLAYER_ENTERING_WORLD')
 TM_lateHookFrame:SetScript('OnEvent', function()
-    local current = ChatFrame_OnEvent
+    -- hook ChatFrame_OnEvent（最外层）
+    local currentOnEvent = ChatFrame_OnEvent
     ChatFrame_OnEvent = function(event)
-        if (event == 'CHAT_MSG_CHANNEL' or event == 'CHAT_MSG_CHANNEL_NOTICE') then
-            if arg9 and string.find(arg9, 'TurtleMarket') then
-                return false
-            end
-        end
-        current(event)
+        if TM_IsTurtleMarketEvent(event) then return end
+        currentOnEvent(event)
     end
-    this:UnregisterEvent('PLAYER_LOGIN')
+
+    -- hook ChatFrame_MessageEventHandler（Turtle WoW 客户端可能用这个替代 ChatFrame_OnEvent）
+    if ChatFrame_MessageEventHandler then
+        local currentMEH = ChatFrame_MessageEventHandler
+        ChatFrame_MessageEventHandler = function(event)
+            if TM_IsTurtleMarketEvent(event) then return end
+            currentMEH(event)
+        end
+    end
+
+    this:UnregisterEvent('PLAYER_ENTERING_WORLD')
 end)
 
 -- Turtle WoW 服务器名列表（用于检测）
@@ -322,9 +338,11 @@ initFrame:SetScript('OnEvent', function()
 
     -- 过滤 TurtleMarket 频道消息在聊天框中的显示
     TM.hooks.Hook(DEFAULT_CHAT_FRAME, 'AddMessage', function(frame, msg, r, g, b, id)
-        -- 先做廉价的字面量检查，避免每条聊天消息都执行 string.lower
-        if msg and string.find(msg, 'urtleMarket') and string.find(string.lower(msg), '%[%d+%. turtlemarket%]') then
-            return  -- 吞掉消息，不显示
+        if msg then
+            -- 检查频道名前缀（未被其他插件修改时）
+            if string.find(msg, 'urtleMarket') then return end
+            -- 检查 TM 协议消息格式（ChatMOD 可能已剥离频道前缀，但协议内容仍在）
+            if string.find(msg, '#[PCHSWXDF]%$') then return end
         end
         local orig = TM.hooks.GetOriginal(DEFAULT_CHAT_FRAME, 'AddMessage')
         orig(frame, msg, r, g, b, id)
