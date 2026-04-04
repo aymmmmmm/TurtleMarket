@@ -14,7 +14,8 @@ if not TM._libsLoaded then
     end
 end
 
--- 隐藏 TurtleMarket 频道：在聊天事件层面拦截（顶层执行，参考 TurtleHCFilter 模式）
+-- 隐藏 TurtleMarket 频道：在聊天事件层面拦截
+-- 先做一次早期 hook（覆盖比 TM 更早加载的插件）
 local TM_orig_ChatFrame_OnEvent = ChatFrame_OnEvent
 ChatFrame_OnEvent = function(event)
     if (event == 'CHAT_MSG_CHANNEL' or event == 'CHAT_MSG_CHANNEL_NOTICE') then
@@ -24,6 +25,23 @@ ChatFrame_OnEvent = function(event)
     end
     TM_orig_ChatFrame_OnEvent(event)
 end
+
+-- 所有插件加载完成后再 hook 一次，确保 TM 的拦截在最外层
+-- （ChatMOD 等插件在 OnLoad 中 hook，晚于文件加载，会包在上面的 hook 外面）
+local TM_lateHookFrame = CreateFrame('Frame')
+TM_lateHookFrame:RegisterEvent('PLAYER_LOGIN')
+TM_lateHookFrame:SetScript('OnEvent', function()
+    local current = ChatFrame_OnEvent
+    ChatFrame_OnEvent = function(event)
+        if (event == 'CHAT_MSG_CHANNEL' or event == 'CHAT_MSG_CHANNEL_NOTICE') then
+            if arg9 and string.find(arg9, 'TurtleMarket') then
+                return false
+            end
+        end
+        current(event)
+    end
+    this:UnregisterEvent('PLAYER_LOGIN')
+end)
 
 -- Turtle WoW 服务器名列表（用于检测）
 local TURTLE_REALMS = {
@@ -476,16 +494,22 @@ initFrame:SetScript('OnEvent', function()
         return hours .. '小时' .. mins .. '分剩余', {0.6, 0.8, 0.6}
     end
 
-    --- 显示物品 Tooltip（优先原生 SetHyperlink，无效 itemId 时回退 AddLine）
+    --- 显示物品 Tooltip（优先使用完整 itemString 还原附魔/后缀信息）
     -- @param itemId number|string 物品 ID
     -- @param fallbackName string 回退显示的物品名
     -- @param fallbackColor table {r, g, b} 回退文字颜色
-    function TM:ShowItemTooltip(itemId, fallbackName, fallbackColor)
-        local id = tonumber(itemId) or 0
-        if id > 0 then
-            GameTooltip:SetHyperlink('item:' .. id .. ':0:0:0')
+    -- @param itemString string|nil 完整物品字符串（如 "12345-2564-456-0"，- 分隔）
+    function TM:ShowItemTooltip(itemId, fallbackName, fallbackColor, itemString)
+        if itemString and string.find(itemString, '-') then
+            local hyperlink = 'item:' .. string.gsub(itemString, '-', ':')
+            GameTooltip:SetHyperlink(hyperlink)
         else
-            GameTooltip:AddLine(fallbackName or '', fallbackColor[1], fallbackColor[2], fallbackColor[3])
+            local id = tonumber(itemId) or 0
+            if id > 0 then
+                GameTooltip:SetHyperlink('item:' .. id .. ':0:0:0')
+            else
+                GameTooltip:AddLine(fallbackName or '', fallbackColor[1], fallbackColor[2], fallbackColor[3])
+            end
         end
     end
 

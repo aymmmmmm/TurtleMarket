@@ -55,7 +55,7 @@ TM.modules['sync'] = function()
         for id, listing in pairs(TM_Data.listings) do
             if listing.expiresAt and listing.expiresAt > time() then
                 local entry = TM.EscapeName(listing.id)
-                    .. ':' .. (listing.itemId or 0)
+                    .. ':' .. (listing.itemString or listing.itemId or 0)
                     .. ':' .. TM.EscapeName(listing.itemName or '')
                     .. ':' .. (listing.count or 1)
                     .. ':' .. (listing.priceGold or 0)
@@ -144,9 +144,17 @@ TM.modules['sync'] = function()
                 table.insert(parts, part)
             end
             if table.getn(parts) >= 10 then
+                local rawItem = parts[2]
+                local syncItemId = tonumber(rawItem) or 0
+                local syncItemString = nil
+                if string.find(rawItem, '-') then
+                    syncItemString = rawItem
+                    syncItemId = tonumber(TM.match(rawItem, '(%d+)')) or 0
+                end
                 local data = {
                     id = TM.UnescapeName(parts[1]),
-                    itemId = tonumber(parts[2]) or 0,
+                    itemId = syncItemId,
+                    itemString = syncItemString,
                     itemName = TM.UnescapeName(parts[3]),
                     count = tonumber(parts[4]) or 1,
                     priceGold = tonumber(parts[5]) or 0,
@@ -201,6 +209,7 @@ TM.modules['sync'] = function()
                     local data = {
                         id = id,
                         itemId = listing.itemId,
+                        itemString = listing.itemString,
                         itemName = listing.itemName,
                         count = listing.count,
                         priceGold = listing.priceGold,

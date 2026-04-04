@@ -150,7 +150,7 @@ TM.modules['mylistings'] = function()
             local listing = TM_Data.myListings[this.listingId]
             if not listing then return end
             GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
-            TM:ShowItemTooltip(listing.itemId, listing.itemName, {1, 1, 1})
+            TM:ShowItemTooltip(listing.itemId, listing.itemName, {1, 1, 1}, listing.itemString)
             if listing.note and listing.note ~= '' then
                 GameTooltip:AddLine(' ')
                 GameTooltip:AddLine('备注: ' .. listing.note, 0.9, 0.9, 0.7)

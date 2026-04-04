@@ -242,7 +242,7 @@ TM.modules['protocol'] = function()
     --- 编码发布消息（含纹理路径，物品名转义）
     function TM:EncodePost(listing)
         local msg = '#P$' .. TM.EscapeName(listing.id)
-            .. ':' .. (listing.itemId or 0)
+            .. ':' .. (listing.itemString or listing.itemId or 0)
             .. ':' .. TM.EscapeName(listing.itemName or 'Unknown')
             .. ':' .. (listing.count or 1)
             .. ':' .. (listing.priceGold or 0)
@@ -265,9 +265,17 @@ TM.modules['protocol'] = function()
             table.insert(parts, part)
         end
         if table.getn(parts) < 10 then return nil end
+        local rawItem = parts[2]
+        local itemId = tonumber(rawItem) or 0
+        local itemString = nil
+        if string.find(rawItem, '-') then
+            itemString = rawItem
+            itemId = tonumber(TM.match(rawItem, '(%d+)')) or 0
+        end
         return {
             id = TM.UnescapeName(parts[1]),
-            itemId = tonumber(parts[2]) or 0,
+            itemId = itemId,
+            itemString = itemString,
             itemName = TM.UnescapeName(parts[3]),
             count = tonumber(parts[4]) or 1,
             priceGold = tonumber(parts[5]) or 0,

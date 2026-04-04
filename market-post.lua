@@ -15,6 +15,7 @@ TM.modules['post'] = function()
     local selectedSlot = nil
     local selectedItemName = ''
     local selectedItemId = 0
+    local selectedItemString = nil
     local selectedItemCount = 0
     local selectedTexture = nil
     local sellCountBox  -- 前向声明
@@ -74,7 +75,7 @@ TM.modules['post'] = function()
     itemFrame:SetScript('OnEnter', function()
         if selectedItemId and selectedItemId > 0 then
             GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
-            TM:ShowItemTooltip(selectedItemId, selectedItemName, {1, 1, 1})
+            TM:ShowItemTooltip(selectedItemId, selectedItemName, {1, 1, 1}, selectedItemString)
             GameTooltip:Show()
         end
     end)
@@ -97,6 +98,13 @@ TM.modules['post'] = function()
         selectedItemCount = count or 1
         local idStr = TM.match(link, 'item:(%d+)')
         selectedItemId = tonumber(idStr) or 0
+        -- 提取完整物品字符串（含附魔/后缀），用 - 替换 : 以兼容协议分隔符
+        local fullStr = TM.match(link, 'item:(%d+:%d+:%d+:%d+)')
+        if fullStr then
+            selectedItemString = string.gsub(fullStr, ':', '-')
+        else
+            selectedItemString = tostring(selectedItemId)
+        end
         selectedTexture = texture
 
         itemNameText:SetText('|cffffffff' .. selectedItemName .. '|r')
@@ -192,6 +200,7 @@ TM.modules['post'] = function()
     local function ResetForm()
         selectedItemName = ''
         selectedItemId = 0
+        selectedItemString = nil
         selectedItemCount = 0
         selectedBag = nil
         selectedSlot = nil
@@ -235,6 +244,7 @@ TM.modules['post'] = function()
         local listing = {
             id = TM:GenerateListingId(),
             itemId = selectedItemId,
+            itemString = selectedItemString,
             itemName = selectedItemName,
             count = count,
             priceGold = gold,

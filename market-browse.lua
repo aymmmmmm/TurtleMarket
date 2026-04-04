@@ -463,13 +463,13 @@ TM.modules['browse'] = function()
             local item = this.listing
             GameTooltip:SetOwner(this, 'ANCHOR_RIGHT')
             if item._type == 'buy' then
-                TM:ShowItemTooltip(item.itemId, '求购: ' .. (item.itemName or ''), {1, 0.82, 0})
+                TM:ShowItemTooltip(item.itemId, '求购: ' .. (item.itemName or ''), {1, 0.82, 0}, item.itemString)
                 GameTooltip:AddLine(' ')
                 GameTooltip:AddLine('需要数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
                 GameTooltip:AddLine('预算上限: ' .. TM:FormatPrice(item.maxGold, item.maxSilver, item.maxCopper), 1, 0.82, 0)
                 GameTooltip:AddLine('买家: ' .. (item.buyer or ''), 0.5, 0.8, 1)
             else
-                TM:ShowItemTooltip(item.itemId, item.itemName, {1, 1, 1})
+                TM:ShowItemTooltip(item.itemId, item.itemName, {1, 1, 1}, item.itemString)
                 GameTooltip:AddLine(' ')
                 GameTooltip:AddLine('数量: ' .. (item.count or 1), 0.8, 0.8, 0.8)
                 GameTooltip:AddLine('价格: ' .. TM:FormatPrice(item.priceGold, item.priceSilver, item.priceCopper), 1, 0.82, 0)
