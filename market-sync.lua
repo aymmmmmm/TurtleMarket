@@ -36,148 +36,221 @@ TM.modules['sync'] = function()
     -- Gossip 同步协议
     -- ============================================================
 
-    --- 发送同步请求 #S（携带本地摘要）
+    --- 发送同步请求 #S
     function TM:RequestSync()
         if not self.isReady then return end
-        local digest = self:ComputeDigest()
-        local msg = '#S$' .. digest
+        local msg = '#S$'
         self:SendMessage(msg, TM.PRIORITY.SYNC)
         TM_Data.syncMeta = TM_Data.syncMeta or {}
         TM_Data.syncMeta.lastFullSync = time()
     end
 
-    --- 发送同步数据 #D（批量发送自己的 listings）
-    function TM:SendSyncData(targetDigest)
-        if not self.isReady then return end
+    --- 编码一条 listing 为 #D 条目字符串
+    local function EncodeListingEntry(listing)
+        return TM.EscapeName(listing.id)
+            .. ':' .. (listing.itemString or listing.itemId or 0)
+            .. ':' .. TM.EscapeName(listing.itemName or '')
+            .. ':' .. (listing.count or 1)
+            .. ':' .. (listing.priceGold or 0)
+            .. ':' .. (listing.priceSilver or 0)
+            .. ':' .. (listing.priceCopper or 0)
+            .. ':' .. (listing.seller or '')
+            .. ':' .. (listing.postedAt or 0)
+            .. ':' .. (listing.expiresAt or 0)
+            .. ':' .. string.gsub(listing.texture or '', '\\', '/')
+            .. ':' .. TM.EscapeName(listing.note or '')
+    end
 
+    --- 编码一条 want 为 #D 条目字符串
+    local function EncodeWantEntry(want)
+        return TM.EscapeName(want.id)
+            .. ':' .. (want.itemId or 0)
+            .. ':' .. TM.EscapeName(want.itemName or '')
+            .. ':' .. (want.count or 1)
+            .. ':' .. (want.maxGold or 0)
+            .. ':' .. (want.maxSilver or 0)
+            .. ':' .. (want.maxCopper or 0)
+            .. ':' .. (want.buyer or '')
+            .. ':' .. (want.postedAt or 0)
+            .. ':' .. (want.expiresAt or 0)
+            .. ':' .. TM.EscapeName(want.note or '')
+    end
+
+    --- 批量发送 #D 消息
+    -- @param entries table 条目数组
+    -- @param typePrefix string 'L' 或 'W'
+    local function SendBatch(entries, typePrefix)
         local batch = {}
         local count = 0
-        for id, listing in pairs(TM_Data.listings) do
-            if listing.expiresAt and listing.expiresAt > time() then
-                local entry = TM.EscapeName(listing.id)
-                    .. ':' .. (listing.itemString or listing.itemId or 0)
-                    .. ':' .. TM.EscapeName(listing.itemName or '')
-                    .. ':' .. (listing.count or 1)
-                    .. ':' .. (listing.priceGold or 0)
-                    .. ':' .. (listing.priceSilver or 0)
-                    .. ':' .. (listing.priceCopper or 0)
-                    .. ':' .. (listing.seller or '')
-                    .. ':' .. (listing.postedAt or 0)
-                    .. ':' .. (listing.expiresAt or 0)
-                    .. ':' .. string.gsub(listing.texture or '', '\\', '/')
-                    .. ':' .. TM.EscapeName(listing.note or '')
-                table.insert(batch, entry)
-                count = count + 1
-                if count >= 10 then
-                    local msg = '#D$' .. table.concat(batch, ';')
-                    TM:SendMessage(msg, TM.PRIORITY.SYNC)
-                    batch = {}
-                    count = 0
-                end
+        for _, entry in ipairs(entries) do
+            table.insert(batch, entry)
+            count = count + 1
+            if count >= 10 then
+                local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
+                TM:SendMessage(msg, TM.PRIORITY.SYNC)
+                batch = {}
+                count = 0
             end
         end
         if count > 0 then
-            local msg = '#D$' .. table.concat(batch, ';')
+            local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
             TM:SendMessage(msg, TM.PRIORITY.SYNC)
         end
+    end
+
+    --- 发送同步数据（自己的 + 缓存中别人的，出售和求购都打包）
+    function TM:SendSyncData()
+        if not self.isReady then return end
+        local now = time()
+
+        -- 收集出售数据
+        local listingEntries = {}
+        -- 先发自己的
+        for id, listing in pairs(TM_Data.myListings) do
+            if listing.expiresAt and listing.expiresAt > now then
+                table.insert(listingEntries, EncodeListingEntry(listing))
+            end
+        end
+        -- 再发缓存中别人的
+        for id, listing in pairs(TM_Data.listings) do
+            if listing.seller ~= TM.playerName
+               and listing.expiresAt and listing.expiresAt > now then
+                table.insert(listingEntries, EncodeListingEntry(listing))
+            end
+        end
+        SendBatch(listingEntries, 'L')
+
+        -- 收集求购数据
+        local wantEntries = {}
+        -- 先发自己的
+        for id, want in pairs(TM_Data.myWants) do
+            if want.expiresAt and want.expiresAt > now then
+                table.insert(wantEntries, EncodeWantEntry(want))
+            end
+        end
+        -- 再发缓存中别人的
+        for id, want in pairs(TM_Data.wants) do
+            if want.buyer ~= TM.playerName
+               and want.expiresAt and want.expiresAt > now then
+                table.insert(wantEntries, EncodeWantEntry(want))
+            end
+        end
+        SendBatch(wantEntries, 'W')
     end
 
     -- ============================================================
     -- 注册同步消息处理器
     -- ============================================================
 
-    -- 处理同步请求 #S（冷却+概率+延迟控制，避免同步风暴）
-    local lastSyncResponse = 0
-
+    -- 处理同步请求 #S（数据多的人延迟短，优先转发）
     TM:RegisterHandler('#S', function(payload, sender)
         if sender == TM.playerName then return end
 
-        local now = time()
-        local cooldown = TM.const.SYNC_RESPONSE_COOLDOWN or 300
+        -- 统计本地缓存总数
+        local myCount = 0
+        for _ in pairs(TM_Data.listings) do myCount = myCount + 1 end
+        for _ in pairs(TM_Data.wants) do myCount = myCount + 1 end
 
-        -- 冷却检查：5分钟内已响应过，跳过
-        if now - lastSyncResponse < cooldown then return end
-
-        -- 概率检查：只有40%的玩家响应，避免全员涌入
-        if math.random() > (TM.const.SYNC_RESPONSE_CHANCE or 0.4) then return end
-
-        lastSyncResponse = now
-
-        -- 加大随机延迟：3-20秒，充分打散
-        local delayMin = TM.const.SYNC_DELAY_MIN or 3
-        local delayMax = TM.const.SYNC_DELAY_MAX or 20
-        local delay = delayMin + math.random(0, delayMax - delayMin)
+        -- 数据越多延迟越短（3-20秒），数据最全的人最先发出去
+        local maxEstimate = TM.const.SYNC_MAX_ESTIMATE or 1000
+        if myCount > maxEstimate then myCount = maxEstimate end
+        local delay = (TM.const.SYNC_DELAY_BASE or 3)
+            + (1 - myCount / maxEstimate) * (TM.const.SYNC_DELAY_RANGE or 17)
 
         TM.timers.delay(delay, function()
             TM:SendSyncData()
         end)
-
-        -- wants 同步延迟在 listings 之后
-        TM.timers.delay(delay + 2 + math.random(0, 5), function()
-            for id, want in pairs(TM_Data.myWants) do
-                if want.expiresAt and want.expiresAt > time() then
-                    local data = {
-                        id = id,
-                        itemId = want.itemId or 0,
-                        itemName = want.itemName,
-                        count = want.count,
-                        maxGold = want.maxGold,
-                        maxSilver = want.maxSilver,
-                        maxCopper = want.maxCopper,
-                        note = want.note,
-                    }
-                    local msg = TM:EncodeWant(data)
-                    TM:SendMessage(msg, TM.PRIORITY.SYNC)
-                end
-            end
-        end)
     end)
 
-    -- 处理同步数据 #D
+    -- 解析 #D 中的一条 listing 条目
+    local function ParseListingEntry(entry)
+        local parts = {}
+        for part in string.gfind(entry, '[^:]+') do
+            table.insert(parts, part)
+        end
+        if table.getn(parts) < 10 then return nil end
+        local rawItem = parts[2]
+        local syncItemId = tonumber(rawItem) or 0
+        local syncItemString = nil
+        if string.find(rawItem, '-') then
+            syncItemString = rawItem
+            syncItemId = tonumber(TM.match(rawItem, '(%d+)')) or 0
+        end
+        local data = {
+            id = TM.UnescapeName(parts[1]),
+            itemId = syncItemId,
+            itemString = syncItemString,
+            itemName = TM.UnescapeName(parts[3]),
+            count = tonumber(parts[4]) or 1,
+            priceGold = tonumber(parts[5]) or 0,
+            priceSilver = tonumber(parts[6]) or 0,
+            priceCopper = tonumber(parts[7]) or 0,
+            seller = parts[8],
+            postedAt = tonumber(parts[9]) or 0,
+            expireHours = 48,
+        }
+        if not TM_Data.listings[data.id] then
+            local expiresAt = tonumber(parts[10]) or 0
+            if expiresAt > time() then
+                data.expireHours = math.ceil((expiresAt - data.postedAt) / 3600)
+                if parts[11] and parts[11] ~= '' then
+                    data.texture = string.gsub(parts[11], '/', '\\')
+                end
+                if parts[12] and parts[12] ~= '' then
+                    data.note = TM.UnescapeName(parts[12])
+                end
+                TM:AddListing(data, 'sync')
+            end
+        end
+    end
+
+    -- 解析 #D 中的一条 want 条目
+    local function ParseWantEntry(entry)
+        local parts = {}
+        for part in string.gfind(entry, '[^:]+') do
+            table.insert(parts, part)
+        end
+        if table.getn(parts) < 9 then return nil end
+        local data = {
+            id = TM.UnescapeName(parts[1]),
+            itemId = tonumber(parts[2]) or 0,
+            itemName = TM.UnescapeName(parts[3]),
+            count = tonumber(parts[4]) or 1,
+            maxGold = tonumber(parts[5]) or 0,
+            maxSilver = tonumber(parts[6]) or 0,
+            maxCopper = tonumber(parts[7]) or 0,
+            buyer = parts[8],
+            postedAt = tonumber(parts[9]) or 0,
+        }
+        local expiresAt = tonumber(parts[10]) or 0
+        if expiresAt > 0 and expiresAt <= time() then return end
+        if parts[11] and parts[11] ~= '' then
+            data.note = TM.UnescapeName(parts[11])
+        end
+        if not TM_Data.wants[data.id] then
+            TM:AddWant(data, 'sync')
+        end
+    end
+
+    -- 处理同步数据 #D（支持 L=出售 / W=求购 前缀，兼容旧版无前缀）
     TM:RegisterHandler('#D', function(payload, sender)
         if not payload or payload == '' then return end
         if sender == TM.playerName then return end
 
-        for entry in string.gfind(payload, '[^;]+') do
-            local parts = {}
-            for part in string.gfind(entry, '[^:]+') do
-                table.insert(parts, part)
-            end
-            if table.getn(parts) >= 10 then
-                local rawItem = parts[2]
-                local syncItemId = tonumber(rawItem) or 0
-                local syncItemString = nil
-                if string.find(rawItem, '-') then
-                    syncItemString = rawItem
-                    syncItemId = tonumber(TM.match(rawItem, '(%d+)')) or 0
-                end
-                local data = {
-                    id = TM.UnescapeName(parts[1]),
-                    itemId = syncItemId,
-                    itemString = syncItemString,
-                    itemName = TM.UnescapeName(parts[3]),
-                    count = tonumber(parts[4]) or 1,
-                    priceGold = tonumber(parts[5]) or 0,
-                    priceSilver = tonumber(parts[6]) or 0,
-                    priceCopper = tonumber(parts[7]) or 0,
-                    seller = parts[8],
-                    postedAt = tonumber(parts[9]) or 0,
-                    expireHours = 48,
-                }
-                if not TM_Data.listings[data.id] then
-                    local expiresAt = tonumber(parts[10]) or 0
-                    if expiresAt > time() then
-                        data.expireHours = math.ceil((expiresAt - data.postedAt) / 3600)
-                        -- 第 11 个字段为纹理路径（兼容旧版无此字段）
-                        if parts[11] and parts[11] ~= '' then
-                            data.texture = string.gsub(parts[11], '/', '\\')
-                        end
-                        if parts[12] and parts[12] ~= '' then
-                            data.note = TM.UnescapeName(parts[12])
-                        end
-                        TM:AddListing(data, 'sync')
-                    end
-                end
+        -- 判断类型前缀
+        local dataType = 'L'  -- 默认出售（兼容旧版）
+        local dataPayload = payload
+        local firstChar = string.sub(payload, 1, 1)
+        if (firstChar == 'L' or firstChar == 'W') and string.sub(payload, 2, 2) == ';' then
+            dataType = firstChar
+            dataPayload = string.sub(payload, 3)
+        end
+
+        for entry in string.gfind(dataPayload, '[^;]+') do
+            if dataType == 'W' then
+                ParseWantEntry(entry)
+            else
+                ParseListingEntry(entry)
             end
         end
         TM:RefreshUI('browse')
@@ -192,6 +265,15 @@ TM.modules['sync'] = function()
         -- 延迟 10 秒发起同步请求
         TM.timers.delay(10, function()
             TM:RequestSync()
+        end)
+
+        -- 40 秒后检查：如果本地还是空的，再请求一次
+        TM.timers.delay(40, function()
+            local count = 0
+            for _ in pairs(TM_Data.listings) do count = count + 1 end
+            if count == 0 and TM:GetOnlineNodeCount() > 0 then
+                TM:RequestSync()
+            end
         end)
 
         -- 立即广播一次心跳
