@@ -91,7 +91,7 @@ TM.modules['sync'] = function()
         for _, entry in ipairs(entries) do
             table.insert(batch, entry)
             count = count + 1
-            if count >= 1 then
+            if count >= 5 then
                 local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
                 TM:SendMessage(msg, TM.PRIORITY.SYNC)
                 batch = {}

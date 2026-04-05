@@ -98,6 +98,7 @@ TM.modules['storage'] = function()
             priceCopper = data.priceCopper or 0,
             postedAt = data.postedAt or time(),
             expiresAt = data.expiresAt or (time() + (TM_Data.config.defaultExpireHours or 48) * 3600),
+            seller = TM.playerName,
             texture = data.texture,
             note = data.note,
         }
@@ -151,6 +152,7 @@ TM.modules['storage'] = function()
             maxCopper = data.maxCopper or 0,
             postedAt = data.postedAt or time(),
             expiresAt = data.expiresAt or (time() + (TM_Data.config.defaultExpireHours or 48) * 3600),
+            buyer = TM.playerName,
             note = data.note,
         }
     end
