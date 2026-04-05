@@ -52,7 +52,7 @@ TM.modules['storage'] = function()
             seller = data.seller or '',
             postedAt = data.postedAt or time(),
             expiresAt = (data.postedAt or time()) + expireSeconds,
-            lastSeen = time(),
+            lastSeen = data.lastSeen or time(),
             source = source or 'direct',
             texture = texture,
             note = data.note,
@@ -176,17 +176,20 @@ TM.modules['storage'] = function()
         end
     end
 
-    --- 更新卖家心跳（标记其所有 listing 的 lastSeen）
+    --- 更新卖家心跳（标记其所有 listing 的 lastSeen + 独立在线追踪）
     function TM:UpdateSellerHeartbeat(seller, ts)
+        local now = ts or time()
+        -- 独立在线追踪
+        TM.onlinePlayers[seller] = now
         for _, listing in pairs(TM_Data.listings) do
             if listing.seller == seller then
-                listing.lastSeen = ts or time()
+                listing.lastSeen = now
             end
         end
         -- 同时更新 wants 中该玩家的 lastSeen
         for _, want in pairs(TM_Data.wants) do
             if want.buyer == seller then
-                want.lastSeen = ts or time()
+                want.lastSeen = now
             end
         end
     end
@@ -539,23 +542,20 @@ TM.modules['storage'] = function()
         return results
     end
 
-    --- 获取在线节点数量
-    function TM:GetOnlineNodeCount()
-        local seen = {}
-        local now = time()
-        for _, listing in pairs(TM_Data.listings) do
-            if listing.seller and listing.lastSeen and (now - listing.lastSeen) < TM.const.ONLINE_TIMEOUT then
-                seen[listing.seller] = true
-            end
-        end
-        for _, want in pairs(TM_Data.wants) do
-            if want.buyer and want.lastSeen and (now - want.lastSeen) < TM.const.ONLINE_TIMEOUT then
-                seen[want.buyer] = true
-            end
-        end
+    --- 获取在线人数（基于独立心跳追踪，不依赖 listings/wants）
+    function TM:GetOnlinePlayerCount()
         local count = 0
-        for _ in pairs(seen) do
-            count = count + 1
+        local now = time()
+        -- 自己永远算在线
+        if TM.playerName then
+            TM.onlinePlayers[TM.playerName] = now
+        end
+        for name, lastSeen in pairs(TM.onlinePlayers) do
+            if (now - lastSeen) < TM.const.ONLINE_TIMEOUT then
+                count = count + 1
+            else
+                TM.onlinePlayers[name] = nil
+            end
         end
         return count
     end

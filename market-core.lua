@@ -224,6 +224,9 @@ initFrame:SetScript('OnEvent', function()
     -- ============================================================
     -- 事件回调注册表（子模块注册自己的处理函数）
     -- ============================================================
+    -- 在线玩家追踪（独立于 listings/wants，基于心跳）
+    TM.onlinePlayers = {}
+
     TM.handlers = {
         -- 频道消息处理器: handlers.channel['#P'] = function(payload, sender) end
         channel = {},

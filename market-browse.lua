@@ -521,7 +521,7 @@ TM.modules['browse'] = function()
         end
     end)
 
-    local nodeText = TM.ui.Font(bottomBar, 10, '在线节点: 0', {0.5, 0.7, 0.5})
+    local nodeText = TM.ui.Font(bottomBar, 10, '在线人数: 0', {0.5, 0.7, 0.5})
     nodeText:SetPoint('LEFT', nextBtn, 'RIGHT', 10, 0)
 
     whisperBtn = TM.ui.Button(bottomBar, '密语', 100, 30)
@@ -564,6 +564,13 @@ TM.modules['browse'] = function()
     local refreshBtn = TM.ui.Button(bottomBar, '刷新', 65, 30)
     refreshBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', 0, 0)
     refreshBtn:SetScript('OnClick', function()
+        if TM._debug then
+            local lCount, wCount = 0, 0
+            for _ in pairs(TM_Data.listings) do lCount = lCount + 1 end
+            for _ in pairs(TM_Data.wants) do wCount = wCount + 1 end
+            DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 刷新: 本地 listings=' .. lCount .. ' wants=' .. wCount .. ' isReady=' .. tostring(TM.isReady) .. ' channelId=' .. tostring(TM.channelId) .. '|r')
+        end
+        TM:RequestSync()
         TM:RefreshUI('browse')
     end)
 
@@ -573,7 +580,7 @@ TM.modules['browse'] = function()
     TM.ui.SetTooltip(applyFilterBtn, '应用价格和玩家筛选')
     TM.ui.SetTooltip(onlineOnlyBtn, '仅显示最近活跃的玩家')
     TM.ui.SetTooltip(whisperBtn, '向选中记录的玩家发送密语')
-    TM.ui.SetTooltip(refreshBtn, '刷新商品列表')
+    TM.ui.SetTooltip(refreshBtn, '同步并刷新商品列表')
 
     -- ============================================================
     -- 求购内容容器（纯发布表单）
@@ -854,7 +861,7 @@ TM.modules['browse'] = function()
         if currentPage > totalPages then currentPage = totalPages end
 
         pageText:SetText('第 ' .. currentPage .. '/' .. totalPages .. ' 页  (' .. table.getn(currentResults) .. ' 条)')
-        nodeText:SetText('在线节点: ' .. TM:GetOnlineNodeCount())
+        nodeText:SetText('在线人数: ' .. TM:GetOnlinePlayerCount())
 
         for i = 1, ITEMS_PER_PAGE do
             listRows[i]:Hide()

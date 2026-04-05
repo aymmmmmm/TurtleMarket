@@ -38,7 +38,11 @@ TM.modules['sync'] = function()
 
     --- 发送同步请求 #S
     function TM:RequestSync()
-        if not self.isReady then return end
+        if not self.isReady then
+            if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[TM Sync] RequestSync 失败: isReady=false|r') end
+            return
+        end
+        if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 发送 #S 同步请求|r') end
         local msg = '#S$'
         self:SendMessage(msg, TM.PRIORITY.SYNC)
         TM_Data.syncMeta = TM_Data.syncMeta or {}
@@ -57,8 +61,9 @@ TM.modules['sync'] = function()
             .. ':' .. (listing.seller or '')
             .. ':' .. (listing.postedAt or 0)
             .. ':' .. (listing.expiresAt or 0)
-            .. ':' .. string.gsub(listing.texture or '', '\\', '/')
-            .. ':' .. TM.EscapeName(listing.note or '')
+            .. ':' .. (string.gsub(listing.texture or '_', '\\', '/'))
+            .. ':' .. (TM.EscapeName(listing.note) or '_')
+            .. ':' .. (listing.lastSeen or 0)
     end
 
     --- 编码一条 want 为 #D 条目字符串
@@ -73,7 +78,8 @@ TM.modules['sync'] = function()
             .. ':' .. (want.buyer or '')
             .. ':' .. (want.postedAt or 0)
             .. ':' .. (want.expiresAt or 0)
-            .. ':' .. TM.EscapeName(want.note or '')
+            .. ':' .. (TM.EscapeName(want.note) or '_')
+            .. ':' .. (want.lastSeen or 0)
     end
 
     --- 批量发送 #D 消息
@@ -85,7 +91,7 @@ TM.modules['sync'] = function()
         for _, entry in ipairs(entries) do
             table.insert(batch, entry)
             count = count + 1
-            if count >= 10 then
+            if count >= 1 then
                 local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
                 TM:SendMessage(msg, TM.PRIORITY.SYNC)
                 batch = {}
@@ -157,7 +163,10 @@ TM.modules['sync'] = function()
         local delay = (TM.const.SYNC_DELAY_BASE or 3)
             + (1 - myCount / maxEstimate) * (TM.const.SYNC_DELAY_RANGE or 17)
 
+        if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 收到 #S 来自 ' .. tostring(sender) .. ' 本地数据=' .. myCount .. ' 延迟=' .. string.format('%.1f', delay) .. 's|r') end
+
         TM.timers.delay(delay, function()
+            if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 开始发送 SendSyncData|r') end
             TM:SendSyncData()
         end)
     end)
@@ -193,11 +202,14 @@ TM.modules['sync'] = function()
             local expiresAt = tonumber(parts[10]) or 0
             if expiresAt > time() then
                 data.expireHours = math.ceil((expiresAt - data.postedAt) / 3600)
-                if parts[11] and parts[11] ~= '' then
+                if parts[11] and parts[11] ~= '' and parts[11] ~= '_' then
                     data.texture = string.gsub(parts[11], '/', '\\')
                 end
-                if parts[12] and parts[12] ~= '' then
+                if parts[12] and parts[12] ~= '' and parts[12] ~= '_' then
                     data.note = TM.UnescapeName(parts[12])
+                end
+                if parts[13] and parts[13] ~= '' then
+                    data.lastSeen = tonumber(parts[13]) or 0
                 end
                 TM:AddListing(data, 'sync')
             end
@@ -224,8 +236,11 @@ TM.modules['sync'] = function()
         }
         local expiresAt = tonumber(parts[10]) or 0
         if expiresAt > 0 and expiresAt <= time() then return end
-        if parts[11] and parts[11] ~= '' then
+        if parts[11] and parts[11] ~= '' and parts[11] ~= '_' then
             data.note = TM.UnescapeName(parts[11])
+        end
+        if parts[12] and parts[12] ~= '' then
+            data.lastSeen = tonumber(parts[12]) or 0
         end
         if not TM_Data.wants[data.id] then
             TM:AddWant(data, 'sync')
@@ -236,6 +251,8 @@ TM.modules['sync'] = function()
     TM:RegisterHandler('#D', function(payload, sender)
         if not payload or payload == '' then return end
         if sender == TM.playerName then return end
+
+        if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 收到 #D 来自 ' .. tostring(sender) .. ' 长度=' .. string.len(payload) .. '|r') end
 
         -- 判断类型前缀
         local dataType = 'L'  -- 默认出售（兼容旧版）
@@ -261,6 +278,7 @@ TM.modules['sync'] = function()
     -- ============================================================
     TM.onReady = function()
         StartHeartbeat()
+        TM.onlinePlayers[TM.playerName] = time()
 
         -- 延迟 10 秒发起同步请求
         TM.timers.delay(10, function()
@@ -271,7 +289,7 @@ TM.modules['sync'] = function()
         TM.timers.delay(40, function()
             local count = 0
             for _ in pairs(TM_Data.listings) do count = count + 1 end
-            if count == 0 and TM:GetOnlineNodeCount() > 0 then
+            if count == 0 and TM:GetOnlinePlayerCount() > 0 then
                 TM:RequestSync()
             end
         end)
