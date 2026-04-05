@@ -427,12 +427,12 @@ initFrame:SetScript('OnEvent', function()
 
     --- 生成唯一的 listing ID
     function TM:GenerateListingId()
-        return TM.playerName .. '-' .. time() .. '-' .. math.random(1000, 9999)
+        return TM.HexEncodeName(TM.playerName) .. '-' .. time() .. '-' .. math.random(1000, 9999)
     end
 
     --- 生成唯一的 want ID
     function TM:GenerateWantId()
-        return 'W-' .. TM.playerName .. '-' .. time() .. '-' .. math.random(1000, 9999)
+        return 'W-' .. TM.HexEncodeName(TM.playerName) .. '-' .. time() .. '-' .. math.random(1000, 9999)
     end
 
     --- 格式化价格显示 (gold/silver/copper -> 可读字符串)

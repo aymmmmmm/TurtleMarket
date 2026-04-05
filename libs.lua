@@ -413,6 +413,41 @@ function TM.UnescapeName(name)
     return name
 end
 
+--- 将角色名编码为十六进制字符串（每字节→两位小写 hex）
+-- 用于协议传输时隐藏角色名，防止被其他插件识别
+-- @param name string 原始角色名
+-- @return string hex 编码后的字符串
+function TM.HexEncodeName(name)
+    if not name or name == '' then return '' end
+    local parts = {}
+    for i = 1, string.len(name) do
+        table.insert(parts, string.format('%02x', string.byte(name, i)))
+    end
+    return table.concat(parts)
+end
+
+--- 将十六进制字符串解码回角色名
+-- 向后兼容：如果输入不是有效 hex 编码（奇数长度、含非 hex 字符、无数字），直接返回原串
+-- 判定依据：WoW 角色名纯字母不含数字，而 hex 编码一定含数字
+-- @param str string hex 编码或明文角色名
+-- @return string 解码后的角色名
+function TM.HexDecodeName(str)
+    if not str or str == '' then return str or '' end
+    -- 必须偶数长度
+    if math.mod(string.len(str), 2) ~= 0 then return str end
+    -- 必须仅含小写 hex 字符，且至少包含一个数字
+    if string.find(str, '[^0-9a-f]') then return str end
+    if not string.find(str, '[0-9]') then return str end
+    -- 解码
+    local parts = {}
+    for i = 1, string.len(str), 2 do
+        local byte = tonumber(string.sub(str, i, i + 1), 16)
+        if not byte then return str end
+        table.insert(parts, string.char(byte))
+    end
+    return table.concat(parts)
+end
+
 --- 按分隔符拆分字符串为数组
 -- @param str string 源字符串
 -- @param sep string 单字符分隔符

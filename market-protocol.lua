@@ -143,7 +143,7 @@ TM.modules['protocol'] = function()
             self:QueueMessage(message, priority)
         else
             fragmentId = fragmentId + 1
-            local msgId = TM.playerName .. fragmentId
+            local msgId = TM.HexEncodeName(TM.playerName) .. fragmentId
             local partSize = MAX_MSG_LEN - 30
             local parts = {}
             local pos = 1
@@ -249,7 +249,7 @@ TM.modules['protocol'] = function()
             .. ':' .. (listing.priceSilver or 0)
             .. ':' .. (listing.priceCopper or 0)
             .. ':' .. (TM_Data.config.defaultExpireHours or 48)
-            .. ':' .. TM.playerName
+            .. ':' .. TM.HexEncodeName(TM.playerName)
             .. ':' .. time()
             .. ':' .. string.gsub(listing.texture or '', '\\', '/')
         if listing.note and listing.note ~= '' then
@@ -282,7 +282,7 @@ TM.modules['protocol'] = function()
             priceSilver = tonumber(parts[6]) or 0,
             priceCopper = tonumber(parts[7]) or 0,
             expireHours = tonumber(parts[8]) or 48,
-            seller = parts[9],
+            seller = TM.HexDecodeName(parts[9]),
             postedAt = tonumber(parts[10]) or time(),
             -- 第 11 字段: 纹理路径（兼容旧版无此字段，恢复反斜杠）
             texture = parts[11] and parts[11] ~= '' and string.gsub(parts[11], '/', '\\') or nil,
@@ -293,13 +293,13 @@ TM.modules['protocol'] = function()
 
     --- 编码取消消息
     function TM:EncodeCancel(listingId)
-        return '#C$' .. TM.EscapeName(listingId) .. ':' .. TM.playerName
+        return '#C$' .. TM.EscapeName(listingId) .. ':' .. TM.HexEncodeName(TM.playerName)
     end
 
     --- 解码取消消息
     function TM:DecodeCancel(payload)
         local rawId, seller = TM.match(payload, '([^:]+):(.+)')
-        return TM.UnescapeName(rawId), seller
+        return TM.UnescapeName(rawId), TM.HexDecodeName(seller)
     end
 
     --- 编码心跳消息
@@ -308,13 +308,13 @@ TM.modules['protocol'] = function()
         for _ in pairs(TM_Data.myListings) do
             count = count + 1
         end
-        return '#H$' .. TM.playerName .. ':' .. count .. ':' .. time() .. ':v' .. TM.PROTOCOL_VERSION
+        return '#H$' .. TM.HexEncodeName(TM.playerName) .. ':' .. count .. ':' .. time() .. ':v' .. TM.PROTOCOL_VERSION
     end
 
     --- 解码心跳消息
     function TM:DecodeHeartbeat(payload)
         local seller, count, ts = TM.match(payload, '([^:]+):([^:]+):(.+)')
-        return seller, tonumber(count), tonumber(ts)
+        return TM.HexDecodeName(seller), tonumber(count), tonumber(ts)
     end
 
     --- 编码求购消息（携带 want ID，物品名转义）
@@ -326,7 +326,7 @@ TM.modules['protocol'] = function()
             .. ':' .. (want.maxGold or 0)
             .. ':' .. (want.maxSilver or 0)
             .. ':' .. (want.maxCopper or 0)
-            .. ':' .. TM.playerName
+            .. ':' .. TM.HexEncodeName(TM.playerName)
             .. ':' .. time()
         if want.note and want.note ~= '' then
             msg = msg .. ':' .. TM.EscapeName(want.note)
@@ -350,7 +350,7 @@ TM.modules['protocol'] = function()
                 maxGold = tonumber(parts[5]) or 0,
                 maxSilver = tonumber(parts[6]) or 0,
                 maxCopper = tonumber(parts[7]) or 0,
-                buyer = parts[8],
+                buyer = TM.HexDecodeName(parts[8]),
                 postedAt = tonumber(parts[9]) or time(),
                 -- 第 10 字段: 备注（兼容旧版无此字段）
                 note = parts[10] and parts[10] ~= '' and TM.UnescapeName(parts[10]) or nil,
@@ -364,7 +364,7 @@ TM.modules['protocol'] = function()
                 maxGold = tonumber(parts[4]) or 0,
                 maxSilver = tonumber(parts[5]) or 0,
                 maxCopper = tonumber(parts[6]) or 0,
-                buyer = parts[7],
+                buyer = TM.HexDecodeName(parts[7]),
                 postedAt = tonumber(parts[8]) or time(),
             }
         end
@@ -373,12 +373,12 @@ TM.modules['protocol'] = function()
 
     --- 编码求购取消消息
     function TM:EncodeWantCancel(wantId)
-        return '#X$' .. TM.EscapeName(wantId) .. ':' .. TM.playerName
+        return '#X$' .. TM.EscapeName(wantId) .. ':' .. TM.HexEncodeName(TM.playerName)
     end
 
     --- 解码求购取消消息
     function TM:DecodeWantCancel(payload)
         local rawId, buyer = TM.match(payload, '([^:]+):(.+)')
-        return TM.UnescapeName(rawId), buyer
+        return TM.UnescapeName(rawId), TM.HexDecodeName(buyer)
     end
 end

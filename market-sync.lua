@@ -58,11 +58,11 @@ TM.modules['sync'] = function()
             .. ':' .. (listing.priceGold or 0)
             .. ':' .. (listing.priceSilver or 0)
             .. ':' .. (listing.priceCopper or 0)
-            .. ':' .. (listing.seller or '')
+            .. ':' .. TM.HexEncodeName(listing.seller or '')
             .. ':' .. (listing.postedAt or 0)
             .. ':' .. (listing.expiresAt or 0)
             .. ':' .. (string.gsub(listing.texture or '_', '\\', '/'))
-            .. ':' .. (TM.EscapeName(listing.note) or '_')
+            .. ':' .. (listing.note and listing.note ~= '' and TM.EscapeName(listing.note) or '_')
             .. ':' .. (listing.lastSeen or 0)
     end
 
@@ -75,10 +75,10 @@ TM.modules['sync'] = function()
             .. ':' .. (want.maxGold or 0)
             .. ':' .. (want.maxSilver or 0)
             .. ':' .. (want.maxCopper or 0)
-            .. ':' .. (want.buyer or '')
+            .. ':' .. TM.HexEncodeName(want.buyer or '')
             .. ':' .. (want.postedAt or 0)
             .. ':' .. (want.expiresAt or 0)
-            .. ':' .. (TM.EscapeName(want.note) or '_')
+            .. ':' .. (want.note and want.note ~= '' and TM.EscapeName(want.note) or '_')
             .. ':' .. (want.lastSeen or 0)
     end
 
@@ -194,7 +194,7 @@ TM.modules['sync'] = function()
             priceGold = tonumber(parts[5]) or 0,
             priceSilver = tonumber(parts[6]) or 0,
             priceCopper = tonumber(parts[7]) or 0,
-            seller = parts[8],
+            seller = TM.HexDecodeName(parts[8]),
             postedAt = tonumber(parts[9]) or 0,
             expireHours = 48,
         }
@@ -231,7 +231,7 @@ TM.modules['sync'] = function()
             maxGold = tonumber(parts[5]) or 0,
             maxSilver = tonumber(parts[6]) or 0,
             maxCopper = tonumber(parts[7]) or 0,
-            buyer = parts[8],
+            buyer = TM.HexDecodeName(parts[8]),
             postedAt = tonumber(parts[9]) or 0,
         }
         local expiresAt = tonumber(parts[10]) or 0
