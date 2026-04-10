@@ -608,13 +608,38 @@ TM.modules['storage'] = function()
         end
     end)
 
-    -- 处理心跳消息 #H
+    -- 处理心跳消息 #H（含僵尸清理）
     TM:RegisterHandler('#H', function(payload, sender)
         local sellerName, count, ts = TM:DecodeHeartbeat(payload)
-        if sellerName then
-            TM:UpdateSellerHeartbeat(sellerName, ts)
-            if sender then
-                TM_PlayerCache.players[sender] = TM_PlayerCache.players[sender] or ''
+        if not sellerName then return end
+        TM:UpdateSellerHeartbeat(sellerName, ts)
+        if sender then
+            TM_PlayerCache.players[sender] = TM_PlayerCache.players[sender] or ''
+        end
+
+        -- 僵尸清理：心跳计数 vs 本地缓存计数
+        -- 如果本地缓存的该卖家 listing 数 > 心跳报告数，多出的是僵尸（#C 丢失）
+        -- 竞态风险极低：需心跳和 #P 在同一秒入队，概率<1/300
+        -- 即使误删，商品会在卖家下次启动广播(T+15)时重新收到
+        if count and count >= 0 then
+            local cached = {}
+            local cachedCount = 0
+            for id, listing in pairs(TM_Data.listings) do
+                if listing.seller == sellerName then
+                    table.insert(cached, { id = id, postedAt = listing.postedAt or 0 })
+                    cachedCount = cachedCount + 1
+                end
+            end
+            if cachedCount > count then
+                table.sort(cached, function(a, b) return a.postedAt < b.postedAt end)
+                local toRemove = cachedCount - count
+                for i = 1, toRemove do
+                    TM_Data.listings[cached[i].id] = nil
+                end
+                if TM._debug then
+                    DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 清理 ' .. sellerName .. ' 的 ' .. toRemove .. ' 条僵尸 listing|r')
+                end
+                TM:RefreshUI('browse')
             end
         end
     end)

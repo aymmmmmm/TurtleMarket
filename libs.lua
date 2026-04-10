@@ -33,7 +33,7 @@ TM.const = {
     MAX_NOTE_LEN = 100,
     SYNC_DELAY_BASE = 3,
     SYNC_DELAY_RANGE = 17,
-    SYNC_MAX_ESTIMATE = 1000,
+    SYNC_MAX_ESTIMATE = 100,
 }
 
 -- 字体路径（延迟检测，先设默认值）

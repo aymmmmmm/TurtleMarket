@@ -12,6 +12,7 @@ TM.modules['sync'] = function()
     -- 心跳广播（间隔从配置读取）
     -- ============================================================
     local heartbeatTimerId = nil
+    local pendingSyncTimerId = nil  -- 防风暴：跟踪待发同步定时器
 
     local function StartHeartbeat()
         if heartbeatTimerId then return end
@@ -82,24 +83,13 @@ TM.modules['sync'] = function()
             .. ':' .. (want.lastSeen or 0)
     end
 
-    --- 批量发送 #D 消息
+    --- 逐条发送 #D 消息（每条~135字符，不触发分片）
+    -- lessons-learned: 永远不要依赖分片传输，每条消息必须<250字符
     -- @param entries table 条目数组
     -- @param typePrefix string 'L' 或 'W'
     local function SendBatch(entries, typePrefix)
-        local batch = {}
-        local count = 0
         for _, entry in ipairs(entries) do
-            table.insert(batch, entry)
-            count = count + 1
-            if count >= 5 then
-                local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
-                TM:SendMessage(msg, TM.PRIORITY.SYNC)
-                batch = {}
-                count = 0
-            end
-        end
-        if count > 0 then
-            local msg = '#D$' .. typePrefix .. ';' .. table.concat(batch, ';')
+            local msg = '#D$' .. typePrefix .. ';' .. entry
             TM:SendMessage(msg, TM.PRIORITY.SYNC)
         end
     end
@@ -111,9 +101,10 @@ TM.modules['sync'] = function()
 
         -- 收集出售数据
         local listingEntries = {}
-        -- 先发自己的
+        -- 先发自己的（自己在线，lastSeen 设为当前时间，避免接收方因 lastSeen=0 误清理）
         for id, listing in pairs(TM_Data.myListings) do
             if listing.expiresAt and listing.expiresAt > now then
+                listing.lastSeen = now
                 table.insert(listingEntries, EncodeListingEntry(listing))
             end
         end
@@ -128,9 +119,10 @@ TM.modules['sync'] = function()
 
         -- 收集求购数据
         local wantEntries = {}
-        -- 先发自己的
+        -- 先发自己的（同上，补充 lastSeen）
         for id, want in pairs(TM_Data.myWants) do
             if want.expiresAt and want.expiresAt > now then
+                want.lastSeen = now
                 table.insert(wantEntries, EncodeWantEntry(want))
             end
         end
@@ -165,8 +157,14 @@ TM.modules['sync'] = function()
 
         if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 收到 #S 来自 ' .. tostring(sender) .. ' 本地数据=' .. myCount .. ' 延迟=' .. string.format('%.1f', delay) .. 's|r') end
 
-        TM.timers.delay(delay, function()
+        -- 防风暴：取消旧的待发任务，防止重复调度
+        if pendingSyncTimerId then
+            TM.timers.cancel(pendingSyncTimerId)
+        end
+        pendingSyncTimerId = TM.timers.delay(delay, function()
+            pendingSyncTimerId = nil
             if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 开始发送 SendSyncData|r') end
+            TM:SetSyncBoost(true)  -- 启用快速发送通道
             TM:SendSyncData()
         end)
     end)
@@ -251,6 +249,13 @@ TM.modules['sync'] = function()
     TM:RegisterHandler('#D', function(payload, sender)
         if not payload or payload == '' then return end
         if sender == TM.playerName then return end
+
+        -- 防风暴：收到别人的 #D，取消自己的待发同步
+        if pendingSyncTimerId then
+            TM.timers.cancel(pendingSyncTimerId)
+            pendingSyncTimerId = nil
+            if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 收到 #D，取消待发 sync|r') end
+        end
 
         if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 收到 #D 来自 ' .. tostring(sender) .. ' 长度=' .. string.len(payload) .. '|r') end
 

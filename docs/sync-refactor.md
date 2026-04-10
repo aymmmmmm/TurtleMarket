@@ -77,9 +77,9 @@ TurtleMarket 是 P2P 去中心化交易插件，所有通信通过 WoW 隐藏聊
 
 30 秒后检查：如果还是空的且知道有人在线，自动再请求一次。简单粗暴但有效。
 
-## 防风暴优化（待实现）
+## 防风暴优化（已实现）
 
-### 当前问题
+### 解决的问题
 
 虽然延迟机制让数据最全的人先发，但**所有人最终都会发**。30 个在线用户全部响应 #S，大量重复 #D 消息挤占频道，挤压正常的 #P/#C 消息。
 
@@ -87,30 +87,24 @@ TurtleMarket 是 P2P 去中心化交易插件，所有通信通过 WoW 隐藏聊
 
 在延迟机制基础上增加一个取消机制：
 
-1. 收到 `#S` 后，照常计算延迟，设置定时器，**但将定时器 ID 存为模块变量**
+1. 收到 `#S` 后，照常计算延迟，设置定时器，**但将定时器 ID 存为模块变量 `pendingSyncTimerId`**
 2. 等待期间如果收到别人发的 `#D`，说明已有人在同步了，**取消自己的定时器**
 3. 数据最全的节点延迟最短（3秒），最先发出 `#D`
 4. 其他节点还在等（10-20秒），听到 `#D` 后自动取消
 5. 最终只有 1-2 个节点实际发送，其余静默
 
-### 为什么不用概率响应
-
-概率机制会随机筛掉节点，可能把数据最全的节点筛掉，让数据少的节点回复。延迟+取消方案能**确保数据最全的节点优先**，不靠运气。
-
-### 边界情况
-
-两个节点数据量接近时（如 900 vs 920），延迟差极小，谁先发不确定——但无所谓，两者数据本来就差不多。
-
-### 实现要点
+### 实现细节
 
 修改 `market-sync.lua`：
 
-- `#S` handler 中将 `TM.timers.delay()` 返回的定时器 ID 存为模块级变量 `syncDelayTimerId`
-- `#D` handler 中检测到非自己发的 `#D` 时，调用 `TM.timers.cancel(syncDelayTimerId)` 取消发送
+- 模块级变量 `pendingSyncTimerId` 跟踪待发同步定时器
+- `#S` handler 中保存 `TM.timers.delay()` 返回的 ID，重复收到 #S 时取消旧定时器
+- `#D` handler 中收到非自己发的 `#D` 时，调用 `TM.timers.cancel(pendingSyncTimerId)` 取消发送
+- 定时器触发时调用 `TM:SetSyncBoost(true)` 启用快速发送通道（见下文）
 
 ## 具体改动（已完成部分）
 
-### 改了什么
+### 第一轮改动
 
 **文件：`market-sync.lua`**
 
@@ -124,11 +118,33 @@ TurtleMarket 是 P2P 去中心化交易插件，所有通信通过 WoW 隐藏聊
 
 常量替换：`SYNC_RESPONSE_COOLDOWN`/`SYNC_RESPONSE_CHANCE`/`SYNC_DELAY_MIN`/`SYNC_DELAY_MAX` → `SYNC_DELAY_BASE`/`SYNC_DELAY_RANGE`/`SYNC_MAX_ESTIMATE`
 
+### 第二轮改动（防风暴 + 快速发送 + 僵尸清理）
+
+**文件：`market-sync.lua`**
+
+1. **防风暴** — `pendingSyncTimerId` 模块变量，#S handler 保存定时器 ID，#D handler 收到他人 #D 时取消
+2. **SendBatch 逐条发送** — 从每批 5 条改为逐条发送（每条 ~135 字符），避免触发分片（lessons-learned #1）
+3. **syncBoosted** — 同步响应前调用 `TM:SetSyncBoost(true)` 启用快速通道
+4. **myListings lastSeen 修复** — 编码自己的 listing/want 时设 `lastSeen = now`，避免接收方因 lastSeen=0 误清理
+
+**文件：`market-protocol.lua`**
+
+5. **syncBoosted 快速通道** — `ProcessQueue` 中 syncBoosted 为 true 时跳过 burst/cooldown，1msg/s 持续发送
+6. **SetSyncBoost 接口** — 设置/重置 syncBoosted 标志，队列清空时自动复位
+
+**文件：`market-storage.lua`**
+
+7. **僵尸清理** — #H handler 中比对心跳计数 vs 本地缓存计数，多出的按最旧优先删除（容差 +1 防竞态）
+
+**文件：`libs.lua`**
+
+8. **SYNC_MAX_ESTIMATE** — 从 1000 降到 100，匹配当前实际规模，恢复延迟区分度
+
 ### 没改什么
 
 - 实时广播（#P/#C/#W/#X）— 没问题不用动
 - 上线同步链（T+3s/10s/15s/18s）— 没问题不用动
-- 心跳机制（每 300 秒）— 没问题不用动
+- 心跳编码/解码（#H 格式）— 没改格式，只在 handler 中增加了僵尸检测逻辑
 - 定期清理（每 30 分钟）— 没问题不用动
 - ChatMOD 竞争 Hook — 不受影响（改动不涉及 market-core.lua 的 Hook 代码）
 
@@ -148,9 +164,11 @@ TurtleMarket 是 P2P 去中心化交易插件，所有通信通过 WoW 隐藏聊
 delay = SYNC_DELAY_BASE + (1 - myCount / SYNC_MAX_ESTIMATE) * SYNC_DELAY_RANGE
 ```
 
+`SYNC_MAX_ESTIMATE` 已从 1000 调整为 100（匹配当前实际规模，见 lessons-learned #5）。
+
 | 本地缓存量 | 延迟 | 含义 |
 |-----------|------|------|
-| 1000 条（满） | 3 秒 | 数据最全，第一个发 |
-| 500 条 | 11.5 秒 | 中等 |
-| 100 条 | 18.3 秒 | 数据少 |
+| 100 条（满） | 3 秒 | 数据最全，第一个发 |
+| 50 条 | 11.5 秒 | 中等 |
+| 15 条 | 17.5 秒 | 数据少 |
 | 0 条 | 20 秒 | 没数据，最后发（其实发了也没东西） |

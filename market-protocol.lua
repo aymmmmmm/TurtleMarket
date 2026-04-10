@@ -38,6 +38,16 @@ TM.modules['protocol'] = function()
     local cooldownUntil = 0
     local sendTimerId = nil
     local fragmentId = 0
+    local syncBoosted = false  -- 同步期间快速发送模式
+
+    --- 设置同步快速发送模式（跳过 burst/cooldown，1msg/s 持续发送）
+    function TM:SetSyncBoost(enabled)
+        syncBoosted = enabled
+        if enabled then
+            burstCount = 0
+            cooldownUntil = 0
+        end
+    end
 
     --- 向发送队列添加消息（队列上限 1000，超限丢弃低优先级消息）
     function TM:QueueMessage(message, priority)
@@ -77,10 +87,21 @@ TM.modules['protocol'] = function()
     function TM:ProcessQueue()
         if table.getn(sendQueue) == 0 then
             TM:StopSendTimer()
+            syncBoosted = false
             return
         end
 
         local now = GetTime()
+
+        -- 同步快速通道：每 tick 发一条，无 burst/cooldown 限制
+        -- THROTTLE_INTERVAL=1s 已保证 WoW 安全发送速率
+        if syncBoosted then
+            local entry = sendQueue[1]
+            table.remove(sendQueue, 1)
+            TM:RawSend(entry.message)
+            lastSendTime = now
+            return
+        end
 
         if now < cooldownUntil then return end
 
