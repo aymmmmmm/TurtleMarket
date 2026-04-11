@@ -564,14 +564,32 @@ TM.modules['browse'] = function()
     local refreshBtn = TM.ui.Button(bottomBar, '刷新', 65, 30)
     refreshBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', 0, 0)
     local refreshCooldownUntil = 0
+    local refreshCooldownTimerId = nil
+
+    --- 刷新按钮置灰（冷却中）
+    local function SetRefreshCooldown(enabled)
+        if enabled then
+            refreshBtn:SetBackdropColor(0.08, 0.08, 0.08, 0.9)
+            refreshBtn:SetBackdropBorderColor(0.25, 0.25, 0.25, 0.9)
+            refreshBtn.text:SetTextColor(0.4, 0.4, 0.4)
+        else
+            refreshBtn:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
+            refreshBtn:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.9)
+            refreshBtn.text:SetTextColor(1, 1, 1)
+        end
+    end
+
     refreshBtn:SetScript('OnClick', function()
         local now = GetTime()
-        if now < refreshCooldownUntil then
-            local remaining = math.ceil(refreshCooldownUntil - now)
-            DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[龟市] 刷新冷却中，请 ' .. remaining .. ' 秒后再试。|r')
-            return
-        end
+        if now < refreshCooldownUntil then return end
         refreshCooldownUntil = now + 60
+        SetRefreshCooldown(true)
+        -- 60 秒后恢复按钮
+        if refreshCooldownTimerId then TM.timers.cancel(refreshCooldownTimerId) end
+        refreshCooldownTimerId = TM.timers.delay(60, function()
+            refreshCooldownTimerId = nil
+            SetRefreshCooldown(false)
+        end)
         if TM._debug then
             local lCount, wCount = 0, 0
             for _ in pairs(TM_Data.listings) do lCount = lCount + 1 end
