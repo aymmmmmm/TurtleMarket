@@ -404,6 +404,10 @@ initFrame:SetScript('OnEvent', function()
                     end
                 end
                 if msgType and TM.handlers.channel[msgType] then
+                    -- 更新频道活动时间戳（用于空闲检测，排除心跳和分片）
+                    if msgType ~= '#H' and msgType ~= '#F' and TM.UpdateChannelActivity then
+                        TM:UpdateChannelActivity()
+                    end
                     local ok, err = pcall(TM.handlers.channel[msgType], payload, sender)
                     if not ok then
                         DEFAULT_CHAT_FRAME:AddMessage('|cffff6666[龟市] Channel handler error (' .. tostring(msgType) .. '): ' .. tostring(err) .. '|r')

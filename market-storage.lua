@@ -562,23 +562,27 @@ TM.modules['storage'] = function()
         return count
     end
 
-    --- 计算所有 listing 的简易摘要 hash（用于同步比对）
+    --- 计算 listings + wants 的摘要 hash（用于同步比对）
+    -- @return lCount, lHash, wCount, wHash
     function TM:ComputeDigest()
-        local ids = {}
-        for id in pairs(TM_Data.listings) do
-            table.insert(ids, id)
-        end
-        table.sort(ids)
-        local count = table.getn(ids)
-        if count == 0 then return '0:0' end
-        -- DJB2 风格累加 hash，对排序后的 id 逐字符累加
-        local hash = 5381
-        for _, id in ipairs(ids) do
-            for c = 1, string.len(id) do
-                hash = math.mod(hash * 33 + string.byte(id, c), 2147483647)
+        -- DJB2 风格累加 hash
+        local function djb2(idTable)
+            local sorted = {}
+            for id in pairs(idTable) do table.insert(sorted, id) end
+            table.sort(sorted)
+            local count = table.getn(sorted)
+            local hash = 5381
+            for _, id in ipairs(sorted) do
+                for c = 1, string.len(id) do
+                    hash = math.mod(hash * 33 + string.byte(id, c), 2147483647)
+                end
             end
+            return count, hash
         end
-        return count .. ':' .. hash
+
+        local lCount, lHash = djb2(TM_Data.listings)
+        local wCount, wHash = djb2(TM_Data.wants)
+        return lCount, lHash, wCount, wHash
     end
 
     -- ============================================================
@@ -608,13 +612,25 @@ TM.modules['storage'] = function()
         end
     end)
 
-    -- 处理心跳消息 #H（含僵尸清理）
+    -- 处理心跳消息 #H（含僵尸清理 + peerDigest 存储）
     TM:RegisterHandler('#H', function(payload, sender)
-        local sellerName, count, ts = TM:DecodeHeartbeat(payload)
+        local sellerName, count, ts, lCount, lHash, wCount, wHash = TM:DecodeHeartbeat(payload)
         if not sellerName then return end
         TM:UpdateSellerHeartbeat(sellerName, ts)
         if sender then
             TM_PlayerCache.players[sender] = TM_PlayerCache.players[sender] or ''
+        end
+
+        -- 存储 peer 的 digest（用于周期性对齐比对）
+        if lCount and lHash then
+            TM.peerDigests = TM.peerDigests or {}
+            TM.peerDigests[sellerName] = {
+                lCount = lCount,
+                lHash = lHash,
+                wCount = wCount or 0,
+                wHash = wHash or 0,
+                timestamp = ts or time(),
+            }
         end
 
         -- 僵尸清理：心跳计数 vs 本地缓存计数

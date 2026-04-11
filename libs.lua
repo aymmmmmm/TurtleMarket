@@ -33,7 +33,10 @@ TM.const = {
     MAX_NOTE_LEN = 100,
     SYNC_DELAY_BASE = 3,
     SYNC_DELAY_RANGE = 17,
-    SYNC_MAX_ESTIMATE = 100,
+    SYNC_MAX_ESTIMATE = 500,
+    SYNC_CHECK_INTERVAL = 600,    -- 周期性对齐检查间隔（秒）
+    CHANNEL_IDLE_THRESHOLD = 30,  -- 频道空闲判定阈值（秒）
+    SYNC_RECHECK_DELAY = 30,      -- 频道忙时延迟重试（秒）
 }
 
 -- 字体路径（延迟检测，先设默认值）

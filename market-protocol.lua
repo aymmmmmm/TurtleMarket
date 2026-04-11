@@ -152,6 +152,10 @@ TM.modules['protocol'] = function()
         end
         message = SanitizeMessage(message)
         SendChatMessage(message, 'CHANNEL', nil, self.channelId)
+        -- 更新频道活动时间戳（用于空闲检测）
+        if self.UpdateChannelActivity then
+            self:UpdateChannelActivity()
+        end
     end
 
     -- ============================================================
@@ -323,19 +327,34 @@ TM.modules['protocol'] = function()
         return TM.UnescapeName(rawId), TM.HexDecodeName(seller)
     end
 
-    --- 编码心跳消息
+    --- 编码心跳消息（携带全局 digest：lCount:lHash:wCount:wHash）
     function TM:EncodeHeartbeat()
         local count = 0
         for _ in pairs(TM_Data.myListings) do
             count = count + 1
         end
+        local lCount, lHash, wCount, wHash = TM:ComputeDigest()
         return '#H$' .. TM.HexEncodeName(TM.playerName) .. ':' .. count .. ':' .. time() .. ':v' .. TM.PROTOCOL_VERSION
+            .. ':' .. lCount .. ':' .. lHash .. ':' .. wCount .. ':' .. wHash
     end
 
-    --- 解码心跳消息
+    --- 解码心跳消息（兼容旧版无 digest 字段）
+    -- @return seller, count, ts, lCount, lHash, wCount, wHash
     function TM:DecodeHeartbeat(payload)
-        local seller, count, ts = TM.match(payload, '([^:]+):([^:]+):(.+)')
-        return TM.HexDecodeName(seller), tonumber(count), tonumber(ts)
+        local parts = {}
+        for part in string.gfind(payload, '[^:]+') do
+            table.insert(parts, part)
+        end
+        if table.getn(parts) < 3 then return nil end
+        local seller = TM.HexDecodeName(parts[1])
+        local count = tonumber(parts[2])
+        local ts = tonumber(parts[3])
+        -- parts[4] = version string (v1), 跳过
+        local lCount = tonumber(parts[5])
+        local lHash = tonumber(parts[6])
+        local wCount = tonumber(parts[7])
+        local wHash = tonumber(parts[8])
+        return seller, count, ts, lCount, lHash, wCount, wHash
     end
 
     --- 编码求购消息（携带 want ID，物品名转义）
