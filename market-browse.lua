@@ -571,7 +571,7 @@ TM.modules['browse'] = function()
             DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[龟市] 刷新冷却中，请 ' .. remaining .. ' 秒后再试。|r')
             return
         end
-        refreshCooldownUntil = now + 30
+        refreshCooldownUntil = now + 60
         if TM._debug then
             local lCount, wCount = 0, 0
             for _ in pairs(TM_Data.listings) do lCount = lCount + 1 end
