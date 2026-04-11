@@ -2,7 +2,7 @@
 ## Title: TurtleMarket - 龟市
 ## Notes: P2P 去中心化交易公告板 - Turtle WoW 硬核模式
 ## Author: anym
-## Version: 1.1.0
+## Version: 1.2.0
 ## SavedVariables: TM_Data, TM_PlayerCache
 
 libs.lua
