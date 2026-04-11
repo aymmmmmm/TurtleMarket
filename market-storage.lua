@@ -58,19 +58,22 @@ TM.modules['storage'] = function()
             note = data.note,
         }
 
-        -- 检查新 listing 是否匹配我的求购，提醒用户
+        -- 检查新 listing 是否匹配我的求购，提醒用户（通知所有匹配的求购）
         if data.seller ~= TM.playerName then
+            local notified = false
             for wantId, want in pairs(TM_Data.myWants) do
                 if want.itemName and data.itemName
                    and string.lower(want.itemName) == string.lower(data.itemName) then
                     local wantMaxCopper = (want.maxGold or 0) * 10000 + (want.maxSilver or 0) * 100 + (want.maxCopper or 0)
                     local listingCopper = (data.priceGold or 0) * 10000 + (data.priceSilver or 0) * 100 + (data.priceCopper or 0)
                     if wantMaxCopper == 0 or listingCopper <= wantMaxCopper then
-                        DEFAULT_CHAT_FRAME:AddMessage('|cffffd700[龟市]|r 有人出售你求购的 |cff00ccff' .. data.itemName .. '|r! 卖家: ' .. (data.seller or ''))
-                        if TM_Data.config.soundAlert then
-                            PlaySound('igPlayerInvite')
+                        if not notified then
+                            DEFAULT_CHAT_FRAME:AddMessage('|cffffd700[龟市]|r 有人出售你求购的 |cff00ccff' .. data.itemName .. '|r! 卖家: ' .. (data.seller or ''))
+                            if TM_Data.config.soundAlert then
+                                PlaySound('igPlayerInvite')
+                            end
+                            notified = true
                         end
-                        break
                     end
                 end
             end
@@ -259,8 +262,8 @@ TM.modules['storage'] = function()
             end
         end
 
-        -- 清理过期墓碑（超过 72 小时的墓碑不再需要保留）
-        local tombstoneExpiry = 72 * 3600
+        -- 清理过期墓碑（保留时间匹配最长 listing 过期时间 168h，防止僵尸复活）
+        local tombstoneExpiry = 168 * 3600
         for id, ts in pairs(TM_Data.tombstones) do
             if now - ts > tombstoneExpiry then
                 TM_Data.tombstones[id] = nil
