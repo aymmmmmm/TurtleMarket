@@ -124,10 +124,11 @@ TM.modules['sync'] = function()
                 table.insert(listingEntries, EncodeListingEntry(listing))
             end
         end
-        -- 再发缓存中别人的
+        -- 再发缓存中别人的（跳过墓碑中的）
         for id, listing in pairs(TM_Data.listings) do
             if listing.seller ~= TM.playerName
-               and listing.expiresAt and listing.expiresAt > now then
+               and listing.expiresAt and listing.expiresAt > now
+               and not TM_Data.tombstones[id] then
                 table.insert(listingEntries, EncodeListingEntry(listing))
             end
         end
@@ -142,10 +143,11 @@ TM.modules['sync'] = function()
                 table.insert(wantEntries, EncodeWantEntry(want))
             end
         end
-        -- 再发缓存中别人的
+        -- 再发缓存中别人的（跳过墓碑中的）
         for id, want in pairs(TM_Data.wants) do
             if want.buyer ~= TM.playerName
-               and want.expiresAt and want.expiresAt > now then
+               and want.expiresAt and want.expiresAt > now
+               and not TM_Data.tombstones[id] then
                 table.insert(wantEntries, EncodeWantEntry(want))
             end
         end
@@ -306,6 +308,9 @@ TM.modules['sync'] = function()
         local dataId = TM.UnescapeName(parts[1])
         local syncLastSeen = tonumber(parts[13]) or 0
 
+        -- 墓碑检查：已取消的 listing 不再接受
+        if TM_Data.tombstones[dataId] then return end
+
         if not TM_Data.listings[dataId] then
             -- 新数据：添加到本地
             local expiresAt = tonumber(parts[10]) or 0
@@ -351,6 +356,9 @@ TM.modules['sync'] = function()
 
         local dataId = TM.UnescapeName(parts[1])
         local syncLastSeen = tonumber(parts[12]) or 0
+
+        -- 墓碑检查：已取消的 want 不再接受
+        if TM_Data.tombstones[dataId] then return end
 
         if not TM_Data.wants[dataId] then
             -- 新数据：添加到本地

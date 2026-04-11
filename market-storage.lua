@@ -77,11 +77,12 @@ TM.modules['storage'] = function()
         end
     end
 
-    --- 删除一条商品信息
+    --- 删除一条商品信息（同时记录墓碑，防止同步时复活）
     function TM:RemoveListing(listingId)
         if not listingId then return end
         TM_Data.listings[listingId] = nil
         TM_Data.myListings[listingId] = nil
+        TM_Data.tombstones[listingId] = time()
     end
 
     --- 添加我发布的商品
@@ -133,11 +134,12 @@ TM.modules['storage'] = function()
         end
     end
 
-    --- 删除一条求购信息
+    --- 删除一条求购信息（同时记录墓碑，防止同步时复活）
     function TM:RemoveWant(wantId)
         if not wantId then return end
         TM_Data.wants[wantId] = nil
         TM_Data.myWants[wantId] = nil
+        TM_Data.tombstones[wantId] = time()
     end
 
     --- 添加我发布的求购
@@ -254,6 +256,14 @@ TM.modules['storage'] = function()
                 if not active[name] then
                     TM_PlayerCache.players[name] = nil
                 end
+            end
+        end
+
+        -- 清理过期墓碑（超过 72 小时的墓碑不再需要保留）
+        local tombstoneExpiry = 72 * 3600
+        for id, ts in pairs(TM_Data.tombstones) do
+            if now - ts > tombstoneExpiry then
+                TM_Data.tombstones[id] = nil
             end
         end
 

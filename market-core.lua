@@ -209,6 +209,7 @@ initFrame:SetScript('OnEvent', function()
     TM_Data.myListings = TM_Data.myListings or {}
     TM_Data.myWants = TM_Data.myWants or {}
     TM_Data.history = TM_Data.history or {}
+    TM_Data.tombstones = TM_Data.tombstones or {}  -- 已取消的 listing/want ID 墓碑
     TM_Data.syncMeta = TM_Data.syncMeta or {}
     TM_Data.config = TM_Data.config or {}
     -- 配置默认值补全（不覆盖已有值）
