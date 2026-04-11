@@ -563,7 +563,15 @@ TM.modules['browse'] = function()
 
     local refreshBtn = TM.ui.Button(bottomBar, '刷新', 65, 30)
     refreshBtn:SetPoint('RIGHT', bottomBar, 'RIGHT', 0, 0)
+    local refreshCooldownUntil = 0
     refreshBtn:SetScript('OnClick', function()
+        local now = GetTime()
+        if now < refreshCooldownUntil then
+            local remaining = math.ceil(refreshCooldownUntil - now)
+            DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[龟市] 刷新冷却中，请 ' .. remaining .. ' 秒后再试。|r')
+            return
+        end
+        refreshCooldownUntil = now + 10
         if TM._debug then
             local lCount, wCount = 0, 0
             for _ in pairs(TM_Data.listings) do lCount = lCount + 1 end
@@ -871,6 +879,21 @@ TM.modules['browse'] = function()
         whisperBtn.text:SetText('密语')
 
         if table.getn(currentResults) == 0 then
+            -- 区分"没有任何数据"和"搜索/筛选无结果"
+            local hasAnyData = false
+            for _ in pairs(TM_Data.listings) do hasAnyData = true; break end
+            if not hasAnyData then
+                for _ in pairs(TM_Data.wants) do hasAnyData = true; break end
+            end
+
+            if not hasAnyData then
+                browseEmptyText:SetText('暂无商品数据，请等待与其他玩家同步...\n\n点击右下角「刷新」按钮手动同步')
+            elseif currentQuery ~= '' or filterMinPrice > 0 or filterMaxPrice > 0
+                   or filterSeller ~= '' or filterOnlineOnly or filterListingType ~= 'all' then
+                browseEmptyText:SetText('没有匹配的记录。尝试其他关键词或清除筛选条件。')
+            else
+                browseEmptyText:SetText('暂无记录。')
+            end
             browseEmptyText:Show()
         else
             browseEmptyText:Hide()
