@@ -285,7 +285,6 @@ TM.modules['sync'] = function()
         pendingSyncTimerId = TM.timers.delay(delay, function()
             pendingSyncTimerId = nil
             if TM._debug then DEFAULT_CHAT_FRAME:AddMessage('|cff33ccff[TM Sync] 开始发送 SendSyncData|r') end
-            TM:SetSyncBoost(true)  -- 启用快速发送通道
             TM:SendSyncData()
         end)
     end)

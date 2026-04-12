@@ -70,9 +70,9 @@ TM.CLASS_COLORS = {
 -- 兼容 Lua 5.0 的 string.find + captures 封装
 -- ============================================================
 function TM.match(str, pattern)
-    local _, _, capture1, capture2, capture3 = string.find(str, pattern)
-    if capture1 then
-        return capture1, capture2, capture3
+    local _, _, c1, c2, c3, c4, c5 = string.find(str, pattern)
+    if c1 then
+        return c1, c2, c3, c4, c5
     else
         local start, stop = string.find(str, pattern)
         if start then

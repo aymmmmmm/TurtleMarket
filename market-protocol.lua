@@ -38,16 +38,9 @@ TM.modules['protocol'] = function()
     local cooldownUntil = 0
     local sendTimerId = nil
     local fragmentId = 0
-    local syncBoosted = false  -- 同步期间快速发送模式
-
-    --- 设置同步快速发送模式（跳过 burst/cooldown，1msg/s 持续发送）
-    function TM:SetSyncBoost(enabled)
-        syncBoosted = enabled
-        if enabled then
-            burstCount = 0
-            cooldownUntil = 0
-        end
-    end
+    local activeFragmentId = nil  -- 正在发送的分片组 msgId（分片保护）
+    local lastSentEntry = nil     -- 上一条发出的消息（用于被 WoW 节流时重新入队）
+    local throttlePauseUntil = 0  -- WoW 节流检测后的暂停截止时间
 
     --- 向发送队列添加消息（队列上限 1000，超限丢弃低优先级消息）
     function TM:QueueMessage(message, priority)
@@ -83,24 +76,64 @@ TM.modules['protocol'] = function()
         end
     end
 
+    --- 从队列中查找指定分片组的下一片
+    -- @param msgId string 分片组 ID
+    -- @return number|nil 队列索引
+    local function FindNextFragment(msgId)
+        for i, entry in ipairs(sendQueue) do
+            local m = entry.message
+            if string.sub(m, 1, 2) == '#F' then
+                local entryMsgId = TM.match(m, '#F%$([^$]+)%$')
+                if entryMsgId == msgId then
+                    return i
+                end
+            end
+        end
+        return nil
+    end
+
+    --- WoW 系统消息节流检测：被服务端拒绝时暂停队列并重新入队
+    function TM:OnChatThrottled()
+        local now = GetTime()
+        throttlePauseUntil = now + 10  -- 暂停 10 秒
+        -- 重新入队上一条被拒绝的消息
+        if lastSentEntry then
+            table.insert(sendQueue, 1, lastSentEntry)
+            lastSentEntry = nil
+        end
+        -- 节流期间中断分片快速通道
+        activeFragmentId = nil
+        burstCount = 0
+        cooldownUntil = now + 10
+    end
+
     --- 处理发送队列
     function TM:ProcessQueue()
         if table.getn(sendQueue) == 0 then
             TM:StopSendTimer()
-            syncBoosted = false
+            activeFragmentId = nil
             return
         end
 
         local now = GetTime()
 
-        -- 同步快速通道：每 tick 发一条，无 burst/cooldown 限制
-        -- THROTTLE_INTERVAL=1s 已保证 WoW 安全发送速率
-        if syncBoosted then
-            local entry = sendQueue[1]
-            table.remove(sendQueue, 1)
-            TM:RawSend(entry.message)
-            lastSendTime = now
-            return
+        -- WoW 节流暂停中，等待恢复
+        if now < throttlePauseUntil then return end
+
+        -- 分片保护：正在发分片组时，跳过节流直接发下一片
+        if activeFragmentId then
+            local idx = FindNextFragment(activeFragmentId)
+            if idx then
+                local entry = sendQueue[idx]
+                table.remove(sendQueue, idx)
+                lastSentEntry = entry
+                TM:RawSend(entry.message)
+                lastSendTime = now
+                return
+            else
+                -- 该组分片已发完，恢复正常节流
+                activeFragmentId = nil
+            end
         end
 
         if now < cooldownUntil then return end
@@ -118,9 +151,24 @@ TM.modules['protocol'] = function()
         local entry = sendQueue[1]
         table.remove(sendQueue, 1)
 
+        lastSentEntry = entry
         TM:RawSend(entry.message)
         burstCount = burstCount + 1
         lastSendTime = now
+
+        -- SYNC 消息发送后主动进入更长的 cooldown（保守节流防封号）
+        if entry.priority == PRIORITY.SYNC and burstCount >= 2 then
+            cooldownUntil = now + 8
+            burstCount = 0
+        end
+
+        -- 检查刚发的消息是否是分片，启动分片保护
+        if string.sub(entry.message, 1, 2) == '#F' then
+            local msgId = TM.match(entry.message, '#F%$([^$]+)%$')
+            if msgId then
+                activeFragmentId = msgId
+            end
+        end
     end
 
     --- 底层发送（直接发到频道，使用缓存的频道 ID）
@@ -162,7 +210,7 @@ TM.modules['protocol'] = function()
     -- 消息分片
     -- ============================================================
 
-    --- 发送消息（自动分片）
+    --- 发送消息（自动分片，按字段边界切割防止截断 hex 名字）
     function TM:SendMessage(message, priority)
         if string.len(message) <= MAX_MSG_LEN then
             self:QueueMessage(message, priority)
@@ -173,8 +221,22 @@ TM.modules['protocol'] = function()
             local parts = {}
             local pos = 1
             while pos <= string.len(message) do
-                table.insert(parts, string.sub(message, pos, pos + partSize - 1))
-                pos = pos + partSize
+                local endPos = pos + partSize - 1
+                if endPos < string.len(message) then
+                    -- 在 partSize 范围内找最后一个 ':' 分隔符，按字段边界切割
+                    local bestCut = nil
+                    for i = endPos, pos, -1 do
+                        if string.byte(message, i) == 58 then -- 58 = ':'
+                            bestCut = i
+                            break
+                        end
+                    end
+                    if bestCut and bestCut > pos then
+                        endPos = bestCut - 1  -- 在 ':' 前切割，':' 留给下一片
+                    end
+                end
+                table.insert(parts, string.sub(message, pos, endPos))
+                pos = endPos + 1
             end
             local totalParts = table.getn(parts)
             for i = 1, totalParts do
@@ -421,4 +483,23 @@ TM.modules['protocol'] = function()
         local rawId, buyer = TM.match(payload, '([^:]+):(.+)')
         return TM.UnescapeName(rawId), TM.HexDecodeName(buyer)
     end
+
+    -- ============================================================
+    -- WoW 系统消息节流检测
+    -- 监听服务端返回的"不能发言"消息，自动暂停队列
+    -- ============================================================
+    local throttleFrame = CreateFrame('Frame')
+    throttleFrame:RegisterEvent('CHAT_MSG_SYSTEM')
+    throttleFrame:SetScript('OnEvent', function()
+        if not arg1 then return end
+        -- 匹配节流提示（精确匹配，避免误触发）
+        if string.find(arg1, 'must wait before speaking')  -- 英文标准: "You must wait before speaking again"
+            or string.find(arg1, 'ERR_CHAT_THROTTLED')     -- 内部错误码
+            or string.find(arg1, 'too many messages') then -- 某些私服变体
+            TM:OnChatThrottled()
+            if TM._debug then
+                DEFAULT_CHAT_FRAME:AddMessage('|cffff9900[TM Throttle] 检测到 WoW 节流，暂停 10 秒: ' .. arg1 .. '|r')
+            end
+        end
+    end)
 end
