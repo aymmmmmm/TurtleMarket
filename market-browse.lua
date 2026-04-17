@@ -952,8 +952,10 @@ TM.modules['browse'] = function()
                 -- 在线状态
                 if TM:IsPlayerOnline(listing.lastSeen) then
                     row.statusText:SetText('|cff00ff00在线|r')
+                elseif listing.lastSeen and listing.lastSeen > 0 then
+                    row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(listing.lastSeen) .. '|r')
                 else
-                    row.statusText:SetText('|cff888888' .. TM:FormatTimeAgo(listing.lastSeen or listing.postedAt or 0) .. '|r')
+                    row.statusText:SetText('|cff888888未知|r')
                 end
 
                 -- 备注

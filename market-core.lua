@@ -494,7 +494,9 @@ initFrame:SetScript('OnEvent', function()
 
     --- 时间格式化（相对时间，中文）
     function TM:FormatTimeAgo(timestamp)
+        if not timestamp or timestamp == 0 then return '未知' end
         local diff = time() - timestamp
+        if diff < 0 or diff > 2592000 then return '未知' end
         if diff < 60 then
             return '刚刚'
         elseif diff < 3600 then
